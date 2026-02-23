@@ -11,7 +11,9 @@
   "dependencies": {
     "@ai-sdk/google": "^3.0.30",
     "@clerk/nextjs": "^6.38.1",
+    "@clerk/themes": "^2.4.55",
     "@neondatabase/serverless": "^1.0.2",
+    "@vercel/blob": "^2.3.0",
     "ai": "^6.0.97",
     "drizzle-orm": "^0.45.1",
     "framer-motion": "^12.34.3",
@@ -20,13 +22,16 @@
     "novel": "^1.0.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "resend": "^6.9.2"
+    "resend": "^6.9.2",
+    "sanitize-html": "^2.17.1",
+    "stripe": "^20.3.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sanitize-html": "^2.16.0",
     "dotenv": "^17.3.1",
     "drizzle-kit": "^0.31.9",
     "eslint": "^9",

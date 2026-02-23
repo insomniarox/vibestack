@@ -1,15 +1,24 @@
 import Link from "next/link";
 import { Users, MailOpen, MousePointerClick, UserMinus, Search, Download, ArrowLeft } from "lucide-react";
+import { db } from "../../../db";
+import { subscribers } from "../../../db/schema";
+import { eq, desc } from "drizzle-orm";
+import { auth } from "@clerk/nextjs/server";
 
-export default function AudiencePage() {
-  // Mock data for visual scaffolding
-  const mockSubscribers = [
-    { id: 1, email: "alice@example.com", status: "Subscribed", date: "2026-02-21", engagement: "High" },
-    { id: 2, email: "bob@corporate.io", status: "Subscribed", date: "2026-02-20", engagement: "Medium" },
-    { id: 3, email: "charlie@web3.eth", status: "Bounced", date: "2026-02-18", engagement: "Low" },
-    { id: 4, email: "diana@design.co", status: "Subscribed", date: "2026-02-15", engagement: "High" },
-    { id: 5, email: "evan@startup.inc", status: "Unsubscribed", date: "2026-02-10", engagement: "None" },
-  ];
+export default async function AudiencePage() {
+  const { userId } = await auth();
+  let userSubscribers: any[] = [];
+  
+  if (userId) {
+    try {
+      userSubscribers = await db.select().from(subscribers).where(eq(subscribers.authorId, userId)).orderBy(desc(subscribers.createdAt));
+    } catch (e) {
+      console.error("DB Fetch Error:", e);
+    }
+  }
+
+  const activeCount = userSubscribers.filter(s => s.status === 'active' || !s.status).length;
+  const unsubsCount = userSubscribers.filter(s => s.status === 'unsubscribed').length;
 
   return (
     <div className="min-h-screen bg-background text-foreground p-6">
@@ -33,10 +42,10 @@ export default function AudiencePage() {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[
-            { label: "Total Subscribers", value: "2,048", icon: Users, color: "text-primary", trend: "+12% this week" },
-            { label: "Avg Open Rate", value: "54.2%", icon: MailOpen, color: "text-purple-400", trend: "+5.1% this week" },
-            { label: "Click Rate", value: "12.8%", icon: MousePointerClick, color: "text-emerald-400", trend: "Stable" },
-            { label: "Unsubscribed", value: "24", icon: UserMinus, color: "text-red-400", trend: "-2% this week" },
+            { label: "Total Subscribers", value: userSubscribers.length.toString(), icon: Users, color: "text-primary", trend: "All time" },
+            { label: "Active", value: activeCount.toString(), icon: MailOpen, color: "text-purple-400", trend: "Current" },
+            { label: "Click Rate", value: "--", icon: MousePointerClick, color: "text-emerald-400", trend: "Coming soon" },
+            { label: "Unsubscribed", value: unsubsCount.toString(), icon: UserMinus, color: "text-red-400", trend: "All time" },
           ].map((stat, i) => (
             <div key={i} className="glass border border-border rounded-2xl p-6 relative overflow-hidden group">
               <div className="flex justify-between items-start mb-4">
@@ -62,9 +71,6 @@ export default function AudiencePage() {
                 className="w-full bg-black border border-border rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-primary/50 text-gray-200 placeholder:text-gray-600 transition-colors"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <button className="text-xs font-semibold tracking-widest uppercase text-gray-400 hover:text-white px-3 py-1">Filter</button>
-            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -74,47 +80,31 @@ export default function AudiencePage() {
                   <th className="p-4 font-medium">Subscriber</th>
                   <th className="p-4 font-medium">Status</th>
                   <th className="p-4 font-medium">Date Added</th>
-                  <th className="p-4 font-medium">Engagement</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50 text-sm">
-                {mockSubscribers.map((sub) => (
+                {userSubscribers.length > 0 ? userSubscribers.map((sub) => (
                   <tr key={sub.id} className="hover:bg-white/[0.02] transition-colors group">
                     <td className="p-4 font-medium text-gray-200">{sub.email}</td>
                     <td className="p-4">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        sub.status === 'Subscribed' ? 'bg-primary/10 text-primary border border-primary/20' :
-                        sub.status === 'Bounced' ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' :
+                        sub.status === 'active' || !sub.status ? 'bg-primary/10 text-primary border border-primary/20' :
                         'bg-red-500/10 text-red-500 border border-red-500/20'
                       }`}>
-                        {sub.status}
+                        {sub.status || 'Active'}
                       </span>
                     </td>
-                    <td className="p-4 text-gray-500 font-mono">{sub.date}</td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-1.5 bg-black border border-border/50 rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full ${
-                            sub.engagement === 'High' ? 'w-full bg-primary shadow-[0_0_10px_rgba(212,255,0,0.5)]' :
-                            sub.engagement === 'Medium' ? 'w-1/2 bg-purple-500' :
-                            sub.engagement === 'Low' ? 'w-1/4 bg-yellow-500' : 'w-0'
-                          }`} />
-                        </div>
-                        <span className="text-xs text-gray-500">{sub.engagement}</span>
-                      </div>
+                    <td className="p-4 text-gray-500 font-mono">{sub.createdAt?.toLocaleDateString()}</td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={3} className="p-8 text-center text-gray-500">
+                      No subscribers yet. Time to grow your audience!
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
-          </div>
-          
-          <div className="p-4 border-t border-border bg-surface/30 flex justify-between items-center text-xs text-gray-500">
-            <span>Showing 5 of 2,048 subscribers</span>
-            <div className="flex gap-2">
-              <button className="px-3 py-1 border border-border rounded hover:bg-white/5 transition-colors disabled:opacity-50">Prev</button>
-              <button className="px-3 py-1 border border-border rounded hover:bg-white/5 transition-colors">Next</button>
-            </div>
           </div>
         </div>
       </main>

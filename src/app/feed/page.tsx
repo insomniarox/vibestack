@@ -1,0 +1,86 @@
+import { db } from "@/db";
+import { posts, users } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
+import Link from "next/link";
+
+export const revalidate = 60; // Cache for 60 seconds
+
+export default async function FeedPage() {
+  // Fetch all published posts and join with authors
+  const feedPosts = await db
+    .select({
+      post: posts,
+      author: users,
+    })
+    .from(posts)
+    .innerJoin(users, eq(posts.authorId, users.id))
+    .where(eq(posts.status, "published"))
+    .orderBy(desc(posts.publishedAt));
+
+  return (
+    <div className="min-h-screen bg-background text-foreground py-12 px-4 sm:px-6 lg:px-8 font-sans">
+      <div className="max-w-3xl mx-auto">
+        <header className="mb-12 flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight text-white mb-2">The Feed</h1>
+            <p className="text-gray-400">Discover the latest vibes from our creators.</p>
+          </div>
+          <Link href="/" className="text-sm font-medium text-primary hover:underline flex items-center gap-1">
+            &larr; Home
+          </Link>
+        </header>
+
+        <div className="space-y-8">
+          {feedPosts.length === 0 ? (
+            <div className="text-center py-12 text-gray-500 glass rounded-2xl border border-border">
+              No posts yet. Be the first to publish!
+            </div>
+          ) : (
+            feedPosts.map(({ post, author }) => (
+              <article key={post.id} className="glass p-6 rounded-2xl border border-border hover:border-primary/50 transition-colors group relative">
+                {/* Full card clickable link */}
+                <Link href={`/${author.handle}/${post.slug}`} className="absolute inset-0 z-10">
+                  <span className="sr-only">Read {post.title}</span>
+                </Link>
+                
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center gap-3">
+                    <Link href={`/${author.handle}`} className="relative z-20 flex items-center gap-3 group/author">
+                      <div className="w-10 h-10 rounded-full bg-surface border border-border flex items-center justify-center font-bold text-primary group-hover/author:border-primary transition-colors">
+                        {author.handle.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-white group-hover/author:text-primary transition-colors">@{author.handle}</p>
+                        <p className="text-xs text-gray-500 group-hover/author:text-gray-400">
+                          {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently'}
+                        </p>
+                      </div>
+                    </Link>
+                  </div>
+                  {post.isPaid && (
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase bg-primary/10 text-primary border border-primary/20">
+                      Premium
+                    </span>
+                  )}
+                </div>
+
+                <h2 className="text-2xl font-bold text-white mb-2 font-serif group-hover:text-primary transition-colors">
+                  {post.title}
+                </h2>
+                
+                <p className="text-gray-400 line-clamp-3 mb-4 text-sm leading-relaxed">
+                  {/* Basic strip of HTML tags for the preview snippet */}
+                  {post.content ? post.content.replace(/<[^>]*>?/gm, '') : ''}
+                </p>
+
+                <div className="flex items-center text-sm font-medium text-primary">
+                  Read more <span className="ml-1 group-hover:translate-x-1 transition-transform">&rarr;</span>
+                </div>
+              </article>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

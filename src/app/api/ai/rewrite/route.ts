@@ -17,11 +17,11 @@ export async function POST(req: Request) {
     ${text}`;
 
     const result = streamText({
-      model: google('gemini-2.5-flash'),
+      model: google(process.env.GOOGLE_AI_MODEL || 'gemini-2.5-flash'),
       prompt,
     });
 
-    return result.toDataStreamResponse();
+    return result.toTextStreamResponse();
   } catch (error) {
     console.error("AI Rewrite Error:", error);
     return new Response('Failed to rewrite text', { status: 500 });

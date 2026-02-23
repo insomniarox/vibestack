@@ -62,7 +62,7 @@ export default function Home() {
             </Link>
             
             <Link 
-              href="#explore" 
+              href="/feed" 
               className="glass flex items-center gap-2 px-8 py-3.5 rounded-full font-semibold hover:bg-white/5 transition-all duration-200"
             >
               <Sparkles className="w-4 h-4 text-horizon" />

@@ -1,8 +1,31 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import VibeEditor from "@/components/VibeEditor";
+import { db } from "@/db";
+import { posts } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 
-export default function WritePage() {
+export default async function WritePage({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
+  const { userId } = await auth();
+  if (!userId) {
+    redirect("/sign-in");
+  }
+
+  const { id } = await searchParams;
+  let initialPost = null;
+
+  if (id) {
+    const existingPost = await db.select().from(posts).where(eq(posts.id, parseInt(id)));
+    if (existingPost.length > 0 && existingPost[0].authorId === userId) {
+      initialPost = existingPost[0];
+    } else {
+      // Not found or unauthorized
+      redirect("/dashboard/write");
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground p-6">
       
@@ -17,14 +40,14 @@ export default function WritePage() {
         </Link>
         <div className="flex items-center gap-3">
           <div className="text-xs font-mono px-3 py-1 rounded-full glass text-primary">
-            DRAFT
+            {initialPost?.status === 'published' ? 'PUBLISHED' : 'DRAFT'}
           </div>
         </div>
       </div>
 
       {/* Editor Container */}
       <main className="max-w-[1600px] mx-auto">
-        <VibeEditor />
+        <VibeEditor initialPost={initialPost} />
       </main>
       
     </div>
