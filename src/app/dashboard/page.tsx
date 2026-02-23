@@ -1,19 +1,24 @@
-import { ArrowUpRight, Users, Zap, Plus, FileText } from "lucide-react";
+import { Users, Zap, Plus, FileText } from "lucide-react";
 import Link from "next/link";
 import { db } from "../../db";
-import { posts, subscribers } from "../../db/schema";
-import { eq, desc, count } from "drizzle-orm";
+import { posts, subscribers, users } from "../../db/schema";
+import { eq, desc, count, sql } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 import DeletePostButton from "@/components/DeletePostButton";
-import { users } from "../../db/schema";
 
-export default async function Dashboard() {
+const POSTS_PER_PAGE = 20;
+
+export default async function Dashboard({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const { userId } = await auth();
-  
+  const { page } = await searchParams;
+  const currentPage = Math.max(1, parseInt(page || "1", 10) || 1);
+  const offset = (currentPage - 1) * POSTS_PER_PAGE;
+
   let subCount = 0;
   let latestPost = null;
-  let allPosts: any[] = [];
-  let publishedPosts: any[] = [];
+  let allPosts: typeof posts.$inferSelect[] = [];
+  let publishedCount = 0;
+  let totalPosts = 0;
   let handle = "";
 
   if (userId) {
@@ -22,17 +27,30 @@ export default async function Dashboard() {
       if (userRecord.length > 0) {
         handle = userRecord[0].handle;
       }
-      
-      const subCountResult = await db.select({ value: count() }).from(subscribers).where(eq(subscribers.authorId, userId));
+
+      const [subCountResult, publishedCountResult, totalCountResult, paginatedPosts, latestPublished] = await Promise.all([
+        db.select({ value: count() }).from(subscribers).where(eq(subscribers.authorId, userId)),
+        db.select({ value: count() }).from(posts).where(
+          sql`${posts.authorId} = ${userId} AND ${posts.status} = 'published'`
+        ),
+        db.select({ value: count() }).from(posts).where(eq(posts.authorId, userId)),
+        db.select().from(posts).where(eq(posts.authorId, userId)).orderBy(desc(posts.createdAt)).limit(POSTS_PER_PAGE).offset(offset),
+        db.select().from(posts).where(
+          sql`${posts.authorId} = ${userId} AND ${posts.status} = 'published'`
+        ).orderBy(desc(posts.publishedAt)).limit(1),
+      ]);
+
       subCount = subCountResult[0].value;
-      
-      allPosts = await db.select().from(posts).where(eq(posts.authorId, userId)).orderBy(desc(posts.createdAt));
-      publishedPosts = allPosts.filter(p => p.status === 'published');
-      latestPost = publishedPosts[0] || null;
+      publishedCount = publishedCountResult[0].value;
+      totalPosts = totalCountResult[0].value;
+      allPosts = paginatedPosts;
+      latestPost = latestPublished[0] || null;
     } catch (e) {
       console.error("DB Fetch Error:", e);
     }
   }
+
+  const totalPages = Math.ceil(totalPosts / POSTS_PER_PAGE);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -78,7 +96,7 @@ export default async function Dashboard() {
             <FileText className="w-5 h-5 text-gray-400" />
           </div>
           <div>
-            <p className="text-3xl font-bold tracking-tight">{publishedPosts.length}</p>
+            <p className="text-3xl font-bold tracking-tight">{publishedCount}</p>
             <p className="text-sm text-gray-400 mt-1">Published Posts</p>
           </div>
         </div>
@@ -144,6 +162,30 @@ export default async function Dashboard() {
             </div>
           )}
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-6">
+            {currentPage > 1 && (
+              <Link
+                href={`/dashboard?page=${currentPage - 1}`}
+                className="px-4 py-2 glass border border-border rounded-lg text-sm hover:bg-white/5 transition-colors"
+              >
+                &larr; Previous
+              </Link>
+            )}
+            <span className="text-sm text-gray-400 font-mono">
+              Page {currentPage} of {totalPages}
+            </span>
+            {currentPage < totalPages && (
+              <Link
+                href={`/dashboard?page=${currentPage + 1}`}
+                className="px-4 py-2 glass border border-border rounded-lg text-sm hover:bg-white/5 transition-colors"
+              >
+                Next &rarr;
+              </Link>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

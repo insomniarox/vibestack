@@ -17,7 +17,11 @@ export default async function WritePage({ searchParams }: { searchParams: Promis
   let initialPost = null;
 
   if (id) {
-    const existingPost = await db.select().from(posts).where(eq(posts.id, parseInt(id)));
+    const postId = parseInt(id, 10);
+    if (isNaN(postId)) {
+      redirect("/dashboard/write");
+    }
+    const existingPost = await db.select().from(posts).where(eq(posts.id, postId));
     if (existingPost.length > 0 && existingPost[0].authorId === userId) {
       initialPost = existingPost[0];
     } else {

@@ -35,7 +35,7 @@ export default function VibeEditor({ initialPost }: { initialPost?: any }) {
       if (!res.ok) throw new Error("Upload failed");
       const blob = await res.json();
       
-      setContent(prev => prev + (prev.length > 0 ? '\n\n' : '') + `![${file.name}](${blob.url})\n`);
+      setContent((prev: string) => prev + (prev.length > 0 ? '\n\n' : '') + `![${file.name}](${blob.url})\n`);
       setIsDirty(true);
     } catch (err) {
       console.error(err);
@@ -99,9 +99,10 @@ export default function VibeEditor({ initialPost }: { initialPost?: any }) {
       
       router.push('/dashboard');
       router.refresh();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      alert(`Action failed: ${error.message}`);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Action failed: ${message}`);
     } finally {
       setIsPublishing(false);
       setIsSavingDraft(false);
@@ -338,7 +339,7 @@ export default function VibeEditor({ initialPost }: { initialPost?: any }) {
 
           {/* Stats / Word Count */}
           <div className="mt-auto pt-6 border-t border-border flex justify-between items-center text-xs text-gray-500 font-mono">
-            <span>{content.split(/\s+/).filter(word => word.length > 0).length} WORDS</span>
+            <span>{content.split(/\s+/).filter((word: string) => word.length > 0).length} WORDS</span>
             <span className="flex items-center gap-2">
               {isDirty ? (
                 <>

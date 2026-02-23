@@ -2,11 +2,18 @@ import { google } from '@ai-sdk/google';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { NextResponse } from 'next/server';
+import { aiColorsSchema } from '@/lib/validations';
 
 export async function POST(req: Request) {
   try {
-    const { vibe, content } = await req.json();
-    
+    const body = await req.json();
+    const parsed = aiColorsSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    }
+
+    const { vibe, content } = parsed.data;
+
     const result = await generateObject({
       model: google(process.env.GOOGLE_AI_MODEL || 'gemini-2.5-flash'),
       schema: z.object({

@@ -1,21 +1,34 @@
 import { db } from "@/db";
 import { posts, users } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import Link from "next/link";
 
-export const revalidate = 60; // Cache for 60 seconds
+export const revalidate = 60;
 
-export default async function FeedPage() {
-  // Fetch all published posts and join with authors
-  const feedPosts = await db
-    .select({
-      post: posts,
-      author: users,
-    })
-    .from(posts)
-    .innerJoin(users, eq(posts.authorId, users.id))
-    .where(eq(posts.status, "published"))
-    .orderBy(desc(posts.publishedAt));
+const POSTS_PER_PAGE = 20;
+
+export default async function FeedPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const { page } = await searchParams;
+  const currentPage = Math.max(1, parseInt(page || "1", 10) || 1);
+  const offset = (currentPage - 1) * POSTS_PER_PAGE;
+
+  const [feedPosts, totalResult] = await Promise.all([
+    db
+      .select({ post: posts, author: users })
+      .from(posts)
+      .innerJoin(users, eq(posts.authorId, users.id))
+      .where(eq(posts.status, "published"))
+      .orderBy(desc(posts.publishedAt))
+      .limit(POSTS_PER_PAGE)
+      .offset(offset),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(posts)
+      .where(eq(posts.status, "published")),
+  ]);
+
+  const totalPosts = Number(totalResult[0].count);
+  const totalPages = Math.ceil(totalPosts / POSTS_PER_PAGE);
 
   return (
     <div className="min-h-screen bg-background text-foreground py-12 px-4 sm:px-6 lg:px-8 font-sans">
@@ -38,7 +51,6 @@ export default async function FeedPage() {
           ) : (
             feedPosts.map(({ post, author }) => (
               <article key={post.id} className="glass p-6 rounded-2xl border border-border hover:border-primary/50 transition-colors group relative">
-                {/* Full card clickable link */}
                 <Link href={`/${author.handle}/${post.slug}`} className="absolute inset-0 z-10">
                   <span className="sr-only">Read {post.title}</span>
                 </Link>
@@ -69,7 +81,6 @@ export default async function FeedPage() {
                 </h2>
                 
                 <p className="text-gray-400 line-clamp-3 mb-4 text-sm leading-relaxed">
-                  {/* Basic strip of HTML tags for the preview snippet */}
                   {post.content ? post.content.replace(/<[^>]*>?/gm, '') : ''}
                 </p>
 
@@ -80,6 +91,30 @@ export default async function FeedPage() {
             ))
           )}
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-12">
+            {currentPage > 1 && (
+              <Link
+                href={`/feed?page=${currentPage - 1}`}
+                className="px-4 py-2 glass border border-border rounded-lg text-sm hover:bg-white/5 transition-colors"
+              >
+                &larr; Previous
+              </Link>
+            )}
+            <span className="text-sm text-gray-400 font-mono">
+              Page {currentPage} of {totalPages}
+            </span>
+            {currentPage < totalPages && (
+              <Link
+                href={`/feed?page=${currentPage + 1}`}
+                className="px-4 py-2 glass border border-border rounded-lg text-sm hover:bg-white/5 transition-colors"
+              >
+                Next &rarr;
+              </Link>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

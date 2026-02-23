@@ -1,36 +1,39 @@
 import { stripe } from '@/lib/stripe';
 import { db } from '@/db';
 import { subscribers } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   const payload = await req.text();
   const sig = req.headers.get('Stripe-Signature');
 
+  if (!sig) {
+    return new NextResponse('Missing Stripe-Signature header', { status: 400 });
+  }
+
   let event;
 
   try {
-    // Note: You must add STRIPE_WEBHOOK_SECRET to your .env.local
     event = stripe.webhooks.constructEvent(
-      payload, 
-      sig!, 
+      payload,
+      sig,
       process.env.STRIPE_WEBHOOK_SECRET!
     );
-  } catch (err: any) {
-    console.error(`Webhook signature verification failed: ${err.message}`);
-    return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    console.error(`Webhook signature verification failed: ${message}`);
+    return new NextResponse(`Webhook Error: ${message}`, { status: 400 });
   }
 
-  // Handle the checkout session completing
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as any;
-    
+
     const authorId = session.metadata?.authorId;
     const email = session.customer_details?.email;
     const subscriptionId = session.subscription;
 
     if (authorId && email) {
-      // Add the user to the subscribers table as an 'active' premium member
       await db.insert(subscribers).values({
         authorId: authorId,
         email: email,
@@ -41,11 +44,17 @@ export async function POST(req: Request) {
     }
   }
 
-  // Handle subscription cancellations
   if (event.type === 'customer.subscription.deleted') {
     const subscription = event.data.object as any;
-    // We would look up the subscriber by stripeSubscriptionId and mark them unsubscribed
-    // Skipped for brevity, but this is where cancellation logic goes
+    const subscriptionId = subscription.id;
+
+    if (subscriptionId) {
+      await db
+        .update(subscribers)
+        .set({ status: 'unsubscribed' })
+        .where(eq(subscribers.stripeSubscriptionId, subscriptionId));
+      console.log(`🚫 Cancelled subscription ${subscriptionId}`);
+    }
   }
 
   return new NextResponse('OK', { status: 200 });

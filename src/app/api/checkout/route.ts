@@ -2,20 +2,40 @@ import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { currentUser } from '@clerk/nextjs/server';
 
+const SUBSCRIPTION_PRICE_CENTS = parseInt(process.env.SUBSCRIPTION_PRICE_CENTS || "1200", 10);
+
+function isValidOrigin(req: Request): boolean {
+  const origin = req.headers.get('origin');
+  const referer = req.headers.get('referer');
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const allowedHost = new URL(appUrl).host;
+
+  if (origin) {
+    try { return new URL(origin).host === allowedHost; } catch { return false; }
+  }
+  if (referer) {
+    try { return new URL(referer).host === allowedHost; } catch { return false; }
+  }
+  return false;
+}
+
 export async function POST(req: Request) {
   try {
+    if (!isValidOrigin(req)) {
+      return new NextResponse("Forbidden", { status: 403 });
+    }
+
     const formData = await req.formData();
     const authorId = formData.get('authorId') as string;
 
-    if (!authorId) {
+    if (!authorId || typeof authorId !== 'string') {
       return new NextResponse("Author ID required", { status: 400 });
     }
 
-    // Attempt to pre-fill email if user is authenticated
     const user = await currentUser();
     const customerEmail = user?.emailAddresses[0]?.emailAddress;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || req.headers.get('origin') || 'http://localhost:3000';
 
-    // Create a Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -28,15 +48,14 @@ export async function POST(req: Request) {
               name: 'VibeStack Premium Subscription',
               description: 'Unlock all premium transmissions from this author.',
             },
-            unit_amount: 1200, // $12.00
+            unit_amount: SUBSCRIPTION_PRICE_CENTS,
             recurring: { interval: 'month' },
           },
           quantity: 1,
         },
       ],
-      // Use the referring URL to bounce them right back
-      success_url: `${req.headers.get('origin') || 'http://localhost:3000'}/?success=true`,
-      cancel_url: `${req.headers.get('origin') || 'http://localhost:3000'}/?canceled=true`,
+      success_url: `${appUrl}/?success=true`,
+      cancel_url: `${appUrl}/?canceled=true`,
       metadata: {
         authorId: authorId,
       },

@@ -1,13 +1,16 @@
 import { streamText } from 'ai';
 import { google } from '@ai-sdk/google';
+import { aiSummarizeSchema } from '@/lib/validations';
 
 export async function POST(req: Request) {
   try {
-    const { text } = await req.json();
-
-    if (!text) {
-      return new Response('No text provided', { status: 400 });
+    const body = await req.json();
+    const parsed = aiSummarizeSchema.safeParse(body);
+    if (!parsed.success) {
+      return new Response(JSON.stringify({ error: parsed.error.flatten() }), { status: 400 });
     }
+
+    const { text } = parsed.data;
 
     const prompt = `Summarize the following text into a punchy, highly engaging TL;DR. 
     Keep it concise (1-2 sentences maximum). Return ONLY the summary.

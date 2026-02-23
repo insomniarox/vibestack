@@ -1,15 +1,18 @@
 import { streamText } from 'ai';
 import { google } from '@ai-sdk/google';
+import { aiRewriteSchema } from '@/lib/validations';
 
 export async function POST(req: Request) {
   try {
-    const { text, vibe } = await req.json();
-
-    if (!text) {
-      return new Response('No text provided', { status: 400 });
+    const body = await req.json();
+    const parsed = aiRewriteSchema.safeParse(body);
+    if (!parsed.success) {
+      return new Response(JSON.stringify({ error: parsed.error.flatten() }), { status: 400 });
     }
 
-    const prompt = `You are an elite copywriter. Rewrite the following text to perfectly match a "${vibe}" tone. 
+    const { text, vibe } = parsed.data;
+
+    const prompt = `You are an elite copywriter. Rewrite the following text to perfectly match a "${vibe || 'neutral'}" tone. 
     Keep the core message intact, but aggressively adapt the vocabulary, pacing, and aesthetic to fit the mood.
     Return ONLY the rewritten text, no conversational filler.
     

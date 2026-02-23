@@ -18,9 +18,10 @@ export default function DeletePostButton({ id }: { id: number }) {
         throw new Error(err || "Failed to delete");
       }
       router.refresh(); // Refresh the dashboard data
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      alert(`Could not delete post: ${err.message}`);
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      alert(`Could not delete post: ${message}`);
     } finally {
       setIsDeleting(false);
     }
