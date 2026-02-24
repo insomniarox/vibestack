@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# VibeStack
+**The first newsletter platform that understands your mood**
 
-## Getting Started
+AI-augmented newsletter platform with vibe-aware theming, paid posts, and subscriber delivery.
 
-First, run the development server:
+## Features
+- Vibe-driven post styling (themes + optional color schemes)
+- Paid content with paywall and author subscriptions
+- Clerk authentication (proxy mode middleware)
+- Stripe checkout for plans and author subscriptions
+- Resend email delivery on publish
+- App Router + server actions/APIs via Next.js
+
+## Tech Stack
+- Next.js 16 (App Router)
+- React 19
+- Clerk (auth)
+- Drizzle ORM + Postgres (Neon)
+- Stripe (billing)
+- Resend (email)
+- Tailwind CSS
+
+## Quickstart
+```bash
+npm install
+npm run dev
+```
+Open `http://localhost:3000`.
+
+## Environment Variables
+Create `.env.local` with:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Core
+DATABASE_URL=postgresql://...
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Clerk
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=...
+CLERK_SECRET_KEY=...
+
+# Stripe
+STRIPE_SECRET_KEY=...
+STRIPE_WEBHOOK_SECRET=...
+PRO_SUBSCRIPTION_PRICE_CENTS=1200
+AUTHOR_SUBSCRIPTION_PRICE_CENTS=500
+
+# Resend
+RESEND_API_KEY=...
+
+# AI
+GOOGLE_AI_MODEL=gemini-2.5-flash
+
+# Optional
+PUBLISH_RATE_LIMIT_HOURS=24
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Database
+Schema lives in `src/db/schema.ts` (Drizzle).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Run migrations with Drizzle Kit, for example:
+```bash
+npx drizzle-kit push
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Auth and Proxy Mode
+Clerk runs in Next.js proxy mode using `src/proxy.ts`. Do not add `src/middleware.ts`.
 
-## Learn More
+Sign-in pages should live under:
+- `src/app/sign-in/[[...sign-in]]/page.tsx`
+- `src/app/sign-up/[[...sign-up]]/page.tsx`
 
-To learn more about Next.js, take a look at the following resources:
+## Payments
+- Pro plan checkout: `src/app/api/plans/pro/route.ts`
+- Author subscriptions: `src/app/api/checkout/route.ts`
+- Stripe webhooks: `src/app/api/webhooks/stripe/route.ts`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Email Delivery
+Publishing sends subscriber emails from `src/app/api/posts/route.ts` using Resend.
