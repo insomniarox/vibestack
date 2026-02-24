@@ -3,15 +3,19 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Sparkles, Wand2, ArrowRight, Settings2, Image as ImageIcon, Loader2, Lock, Unlock, X, Palette } from "lucide-react";
+import type { posts } from "@/db/schema";
 
-export default function VibeEditor({ initialPost }: { initialPost?: any }) {
+type VibeEditorPost = typeof posts.$inferSelect;
+
+export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEditorPost | null; plan: "hobby" | "pro" }) {
   const router = useRouter();
+  const isPro = plan === "pro";
   const [title, setTitle] = useState(initialPost?.title || "");
   const [content, setContent] = useState(initialPost?.content || "");
-  const [vibe, setVibe] = useState(initialPost?.vibeTheme || "neutral");
+  const [vibe, setVibe] = useState(isPro ? initialPost?.vibeTheme || "neutral" : "neutral");
   const [isPaid, setIsPaid] = useState(initialPost?.isPaid || false);
   const [colorScheme, setColorScheme] = useState<{ background: string; text: string; primary: string } | null>(
-    initialPost?.colorScheme ? JSON.parse(initialPost.colorScheme) : null
+    isPro && initialPost?.colorScheme ? JSON.parse(initialPost.colorScheme) : null
   );
   
   const [thinkingAction, setThinkingAction] = useState<string | null>(null);
@@ -46,6 +50,7 @@ export default function VibeEditor({ initialPost }: { initialPost?: any }) {
   };
 
   const generateColorScheme = async () => {
+    if (!isPro) return;
     setIsGeneratingColors(true);
     try {
       const res = await fetch('/api/ai/colors', {
@@ -73,14 +78,16 @@ export default function VibeEditor({ initialPost }: { initialPost?: any }) {
 
     try {
       const method = initialPost ? 'PUT' : 'POST';
+      const payloadVibe = isPro ? vibe : "neutral";
+      const payloadColorScheme = isPro && colorScheme ? JSON.stringify(colorScheme) : null;
       const body = {
         ...(initialPost && { id: initialPost.id }),
         title, 
         content, 
-        vibe, 
+        vibe: payloadVibe, 
         status, 
         isPaid,
-        colorScheme: colorScheme ? JSON.stringify(colorScheme) : null
+        colorScheme: payloadColorScheme
       };
 
       const res = await fetch('/api/posts', {
@@ -117,7 +124,7 @@ export default function VibeEditor({ initialPost }: { initialPost?: any }) {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: content, vibe })
+        body: JSON.stringify({ text: content, vibe: isPro ? vibe : "neutral" })
       });
 
       if (!res.ok) {
@@ -229,71 +236,75 @@ export default function VibeEditor({ initialPost }: { initialPost?: any }) {
 
           <div className="h-px w-full bg-border" />
 
-          {/* Vibe Engine Selector */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 text-gray-400">
-                <Settings2 className="w-4 h-4" />
-                <h3 className="text-xs font-bold tracking-widest uppercase">The Vibe Engine</h3>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              {['neutral', 'aggressive', 'melancholic', 'luxury'].map((v) => (
-                <button
-                  key={v}
-                  onClick={() => { setVibe(v); setIsDirty(true); }}
-                  className={`p-3 rounded-xl text-xs font-semibold capitalize transition-all border ${
-                    vibe === v 
-                    ? 'bg-primary/10 border-primary/50 text-primary shadow-[0_0_10px_rgba(212,255,0,0.1)]' 
-                    : 'bg-surface border-border text-gray-400 hover:border-gray-500 hover:text-white'
-                  }`}
-                >
-                  {v}
-                </button>
-              ))}
-            </div>
-
-            {/* AI Color Scheme Generator */}
-            <div className="bg-surface/50 p-3 rounded-xl border border-border">
-              <button 
-                onClick={generateColorScheme}
-                disabled={isGeneratingColors}
-                className="w-full flex items-center justify-center gap-2 p-2 rounded-lg bg-black text-xs font-semibold hover:bg-white/5 transition-colors border border-border disabled:opacity-50"
-              >
-                {isGeneratingColors ? (
-                  <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                ) : (
-                  <Palette className="w-4 h-4 text-primary" />
-                )}
-                {isGeneratingColors ? 'Generating colors...' : 'Generate Theme Colors'}
-              </button>
-
-              {colorScheme && (
-                <div className="mt-3 space-y-3">
-                  <div className="flex items-center gap-3 bg-black p-2 rounded-lg border border-border">
-                    <div className="flex flex-1 rounded-full overflow-hidden h-6 border border-border">
-                      <div style={{ backgroundColor: colorScheme.background }} className="flex-1" title="Background" />
-                      <div style={{ backgroundColor: colorScheme.text }} className="flex-1" title="Text" />
-                      <div style={{ backgroundColor: colorScheme.primary }} className="flex-1" title="Primary" />
-                    </div>
-                    <button onClick={() => { setColorScheme(null); setIsDirty(true); }} className="text-gray-500 hover:text-white transition-colors" title="Remove Color Scheme">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  {/* Miniature Vibe Preview */}
-                  <div 
-                    className="p-4 rounded-lg border border-border text-xs font-sans text-center transition-colors duration-500"
-                    style={{ backgroundColor: colorScheme.background, color: colorScheme.text }}
-                  >
-                    <h4 style={{ color: colorScheme.primary }} className="font-bold text-sm mb-1 transition-colors duration-500">Email Vibe Preview</h4>
-                    <p className="opacity-90">This is how your email will look to your readers.</p>
+          {isPro && (
+            <>
+              {/* Vibe Engine Selector */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <Settings2 className="w-4 h-4" />
+                    <h3 className="text-xs font-bold tracking-widest uppercase">The Vibe Engine</h3>
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {['neutral', 'aggressive', 'melancholic', 'luxury'].map((v) => (
+                    <button
+                      key={v}
+                      onClick={() => { setVibe(v); setIsDirty(true); }}
+                      className={`p-3 rounded-xl text-xs font-semibold capitalize transition-all border ${
+                        vibe === v 
+                        ? 'bg-primary/10 border-primary/50 text-primary shadow-[0_0_10px_rgba(212,255,0,0.1)]' 
+                        : 'bg-surface border-border text-gray-400 hover:border-gray-500 hover:text-white'
+                      }`}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
 
-          <div className="h-px w-full bg-border" />
+                {/* AI Color Scheme Generator */}
+                <div className="bg-surface/50 p-3 rounded-xl border border-border">
+                  <button 
+                    onClick={generateColorScheme}
+                    disabled={isGeneratingColors}
+                    className="w-full flex items-center justify-center gap-2 p-2 rounded-lg bg-black text-xs font-semibold hover:bg-white/5 transition-colors border border-border disabled:opacity-50"
+                  >
+                    {isGeneratingColors ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                    ) : (
+                      <Palette className="w-4 h-4 text-primary" />
+                    )}
+                    {isGeneratingColors ? 'Generating colors...' : 'Generate Theme Colors'}
+                  </button>
+
+                  {colorScheme && (
+                    <div className="mt-3 space-y-3">
+                      <div className="flex items-center gap-3 bg-black p-2 rounded-lg border border-border">
+                        <div className="flex flex-1 rounded-full overflow-hidden h-6 border border-border">
+                          <div style={{ backgroundColor: colorScheme.background }} className="flex-1" title="Background" />
+                          <div style={{ backgroundColor: colorScheme.text }} className="flex-1" title="Text" />
+                          <div style={{ backgroundColor: colorScheme.primary }} className="flex-1" title="Primary" />
+                        </div>
+                        <button onClick={() => { setColorScheme(null); setIsDirty(true); }} className="text-gray-500 hover:text-white transition-colors" title="Remove Color Scheme">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      {/* Miniature Vibe Preview */}
+                      <div 
+                        className="p-4 rounded-lg border border-border text-xs font-sans text-center transition-colors duration-500"
+                        style={{ backgroundColor: colorScheme.background, color: colorScheme.text }}
+                      >
+                        <h4 style={{ color: colorScheme.primary }} className="font-bold text-sm mb-1 transition-colors duration-500">Email Vibe Preview</h4>
+                        <p className="opacity-90">This is how your email will look to your readers.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="h-px w-full bg-border" />
+            </>
+          )}
 
           {/* AI Actions */}
           <div>

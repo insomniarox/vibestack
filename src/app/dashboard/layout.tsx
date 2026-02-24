@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LayoutGrid, PenTool, Users, Settings, LogOut } from "lucide-react";
+import { LayoutGrid, PenTool, Users, LogOut } from "lucide-react";
 import { UserButton, SignOutButton } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
 
@@ -29,11 +29,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-3 px-4 py-3 text-sm font-medium">
             <UserButton showName appearance={{ baseTheme: dark, elements: { userButtonBox: "flex-row-reverse", userButtonOuterIdentifier: "text-white font-semibold" } }} />
           </div>
-          <SignOutButton>
-            <button className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-400 hover:text-primary transition-colors">
-              <LogOut className="w-4 h-4" /> Sign Out
+          <SignOutButton>{(
+            <button className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-400 hover:text-primary transition-colors" type="button">
+              <LogOut className="w-4 h-4" />
+              <span>Sign Out</span>
             </button>
-          </SignOutButton>
+          )}</SignOutButton>
         </div>
       </aside>
       

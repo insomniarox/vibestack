@@ -5,6 +5,8 @@ export const users = pgTable("users", {
   handle: varchar("handle", { length: 255 }).unique().notNull(),
   email: varchar("email", { length: 255 }).unique().notNull(),
   bio: text("bio"),
+  plan: varchar("plan", { length: 50 }).default("hobby").notNull(),
+  planSubscriptionId: varchar("plan_subscription_id", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

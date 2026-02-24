@@ -2,7 +2,7 @@ import { Users, Zap, Plus, FileText } from "lucide-react";
 import Link from "next/link";
 import { db } from "../../db";
 import { posts, subscribers, users } from "../../db/schema";
-import { eq, desc, count, sql } from "drizzle-orm";
+import { eq, desc, count, and } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 import DeletePostButton from "@/components/DeletePostButton";
 
@@ -31,12 +31,12 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       const [subCountResult, publishedCountResult, totalCountResult, paginatedPosts, latestPublished] = await Promise.all([
         db.select({ value: count() }).from(subscribers).where(eq(subscribers.authorId, userId)),
         db.select({ value: count() }).from(posts).where(
-          sql`${posts.authorId} = ${userId} AND ${posts.status} = 'published'`
+          and(eq(posts.authorId, userId), eq(posts.status, 'published'))
         ),
         db.select({ value: count() }).from(posts).where(eq(posts.authorId, userId)),
         db.select().from(posts).where(eq(posts.authorId, userId)).orderBy(desc(posts.createdAt)).limit(POSTS_PER_PAGE).offset(offset),
         db.select().from(posts).where(
-          sql`${posts.authorId} = ${userId} AND ${posts.status} = 'published'`
+          and(eq(posts.authorId, userId), eq(posts.status, 'published'))
         ).orderBy(desc(posts.publishedAt)).limit(1),
       ]);
 

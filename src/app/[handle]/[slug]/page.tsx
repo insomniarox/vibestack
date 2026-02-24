@@ -3,6 +3,7 @@ import { users, posts, subscribers } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
 import { currentUser } from "@clerk/nextjs/server";
 
@@ -75,7 +76,7 @@ export default async function PostPage({ params }: { params: Promise<{ handle: s
           <form action="/api/checkout" method="POST">
             <input type="hidden" name="authorId" value={author.id} />
             <button type="submit" className="bg-white/10 hover:bg-white/20 text-white px-4 py-1.5 rounded-full text-sm font-medium transition-colors backdrop-blur-md">
-              Subscribe
+              Subscribe ($5/mo)
             </button>
           </form>
         )}
@@ -101,7 +102,17 @@ export default async function PostPage({ params }: { params: Promise<{ handle: s
             if (paragraph.startsWith('![') && paragraph.includes('](')) {
               const alt = paragraph.match(/\[(.*?)\]/)?.[1] || 'Image';
               const src = paragraph.match(/\((.*?)\)/)?.[1] || '';
-              return <img key={i} src={src} alt={alt} className="rounded-xl w-full my-8 border border-border" />;
+              return (
+                <Image
+                  key={i}
+                  src={src}
+                  alt={alt}
+                  width={1200}
+                  height={800}
+                  className="rounded-xl w-full my-8 border border-border"
+                  unoptimized
+                />
+              );
             }
             return <p key={i} className="mb-6">{paragraph}</p>;
           })}
@@ -117,7 +128,7 @@ export default async function PostPage({ params }: { params: Promise<{ handle: s
                 <form action="/api/checkout" method="POST">
                   <input type="hidden" name="authorId" value={author.id} />
                   <button type="submit" className="bg-primary text-black px-8 py-3 rounded-full font-semibold hover:bg-primary/90 transition-colors shadow-[0_0_15px_rgba(212,255,0,0.2)]">
-                    Upgrade to Read ($12/mo)
+                    Upgrade to Read ($5/mo)
                   </button>
                 </form>
               </div>

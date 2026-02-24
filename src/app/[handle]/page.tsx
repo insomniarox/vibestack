@@ -63,7 +63,7 @@ export default async function AuthorProfile({ params }: { params: Promise<{ hand
             <form action="/api/checkout" method="POST" className="mt-8 inline-block">
               <input type="hidden" name="authorId" value={author.id} />
               <button type="submit" className="bg-primary text-black px-8 py-3 rounded-full font-semibold hover:bg-primary/90 transition-colors shadow-[0_0_15px_rgba(212,255,0,0.2)]">
-                Subscribe
+                Subscribe ($5/mo)
               </button>
             </form>
           ) : (

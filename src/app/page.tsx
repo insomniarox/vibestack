@@ -128,10 +128,12 @@ export default function Home() {
               <div className="mb-6"><span className="text-4xl font-bold">$0</span><span className="text-gray-400">/mo</span></div>
               <ul className="space-y-4 mb-8 flex-1">
                 <li className="flex items-center gap-3 text-gray-300"><Check className="w-5 h-5 text-primary" /> Up to 500 subscribers</li>
-                <li className="flex items-center gap-3 text-gray-300"><Check className="w-5 h-5 text-primary" /> Basic editor features</li>
+                <li className="flex items-center gap-3 text-gray-300"><Check className="w-5 h-5 text-primary" /> AI tools (rewrite + summarize)</li>
                 <li className="flex items-center gap-3 text-gray-300"><Check className="w-5 h-5 text-primary" /> Standard support</li>
               </ul>
-              <button className="w-full py-3 rounded-full border border-border hover:bg-white/5 transition-colors font-semibold">Get Started</button>
+              <form action="/api/plans/hobby" method="POST">
+                <button className="w-full py-3 rounded-full border border-border hover:bg-white/5 transition-colors font-semibold">Get Started</button>
+              </form>
             </div>
 
             {/* Pro Tier */}
@@ -145,7 +147,9 @@ export default function Home() {
                 <li className="flex items-center gap-3 text-gray-300"><Check className="w-5 h-5 text-primary" /> Advanced analytics</li>
                 <li className="flex items-center gap-3 text-gray-300"><Check className="w-5 h-5 text-primary" /> Priority support</li>
               </ul>
-              <button className="w-full py-3 rounded-full bg-primary text-black hover:bg-primary/90 transition-colors font-semibold">Start Free Trial</button>
+              <form action="/api/plans/pro" method="POST">
+                <button className="w-full py-3 rounded-full bg-primary text-black hover:bg-primary/90 transition-colors font-semibold">Go Vibe</button>
+              </form>
             </div>
 
             {/* Enterprise Tier */}
@@ -158,7 +162,7 @@ export default function Home() {
                 <li className="flex items-center gap-3 text-gray-300"><Check className="w-5 h-5 text-primary" /> API access</li>
                 <li className="flex items-center gap-3 text-gray-300"><Check className="w-5 h-5 text-primary" /> Dedicated account manager</li>
               </ul>
-              <button className="w-full py-3 rounded-full border border-border hover:bg-white/5 transition-colors font-semibold">Contact Sales</button>
+              <button className="w-full py-3 rounded-full border border-border hover:bg-white/5 transition-colors font-semibold" disabled>Coming soon</button>
             </div>
           </div>
         </section>

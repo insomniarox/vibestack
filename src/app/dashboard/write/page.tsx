@@ -6,6 +6,7 @@ import { posts } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import { getUserPlan } from "@/lib/user-plans";
 
 export default async function WritePage({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
   const { userId } = await auth();
@@ -13,6 +14,7 @@ export default async function WritePage({ searchParams }: { searchParams: Promis
     redirect("/sign-in");
   }
 
+  const plan = await getUserPlan(userId);
   const { id } = await searchParams;
   let initialPost = null;
 
@@ -51,7 +53,7 @@ export default async function WritePage({ searchParams }: { searchParams: Promis
 
       {/* Editor Container */}
       <main className="max-w-[1600px] mx-auto">
-        <VibeEditor initialPost={initialPost} />
+        <VibeEditor initialPost={initialPost} plan={plan} />
       </main>
       
     </div>

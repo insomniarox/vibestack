@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { currentUser } from '@clerk/nextjs/server';
+import { db } from '@/db';
+import { subscribers, users } from '@/db/schema';
+import { and, count, eq, ne } from 'drizzle-orm';
 
-const SUBSCRIPTION_PRICE_CENTS = parseInt(process.env.SUBSCRIPTION_PRICE_CENTS || "1200", 10);
+const AUTHOR_SUBSCRIPTION_PRICE_CENTS = parseInt(process.env.AUTHOR_SUBSCRIPTION_PRICE_CENTS || "500", 10);
 
 function isValidOrigin(req: Request): boolean {
   const origin = req.headers.get('origin');
@@ -19,6 +22,19 @@ function isValidOrigin(req: Request): boolean {
   return false;
 }
 
+async function isHobbyLimitReached(authorId: string) {
+  const author = await db.select({ plan: users.plan }).from(users).where(eq(users.id, authorId));
+  const plan = author[0]?.plan || 'hobby';
+  if (plan !== 'hobby') return false;
+
+  const [{ value }] = await db
+    .select({ value: count() })
+    .from(subscribers)
+    .where(and(eq(subscribers.authorId, authorId), ne(subscribers.status, 'unsubscribed')));
+
+  return Number(value) >= 500;
+}
+
 export async function POST(req: Request) {
   try {
     if (!isValidOrigin(req)) {
@@ -30,6 +46,10 @@ export async function POST(req: Request) {
 
     if (!authorId || typeof authorId !== 'string') {
       return new NextResponse("Author ID required", { status: 400 });
+    }
+
+    if (await isHobbyLimitReached(authorId)) {
+      return new NextResponse("Author has reached the hobby subscriber limit", { status: 403 });
     }
 
     const user = await currentUser();
@@ -45,10 +65,10 @@ export async function POST(req: Request) {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: 'VibeStack Premium Subscription',
-              description: 'Unlock all premium transmissions from this author.',
+              name: 'Author Subscription',
+              description: 'Follow this author and get their emails.',
             },
-            unit_amount: SUBSCRIPTION_PRICE_CENTS,
+            unit_amount: AUTHOR_SUBSCRIPTION_PRICE_CENTS,
             recurring: { interval: 'month' },
           },
           quantity: 1,
@@ -57,6 +77,7 @@ export async function POST(req: Request) {
       success_url: `${appUrl}/?success=true`,
       cancel_url: `${appUrl}/?canceled=true`,
       metadata: {
+        planType: 'author',
         authorId: authorId,
       },
     });

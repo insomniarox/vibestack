@@ -5,9 +5,11 @@ import { subscribers } from "../../../db/schema";
 import { eq, desc } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 
+type Subscriber = typeof subscribers.$inferSelect;
+
 export default async function AudiencePage() {
   const { userId } = await auth();
-  let userSubscribers: any[] = [];
+  let userSubscribers: Subscriber[] = [];
   
   if (userId) {
     try {

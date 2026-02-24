@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/db";
-import { posts, users, subscribers } from "@/db/schema";
+import { posts, subscribers } from "@/db/schema";
 import { eq, and, gte, ne } from "drizzle-orm";
 import { Resend } from "resend";
 import sanitizeHtml from "sanitize-html";
 import { createPostSchema, updatePostSchema } from "@/lib/validations";
+import { buildHandle, getUserPlan, upsertUserRecord } from "@/lib/user-plans";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -112,13 +113,17 @@ export async function POST(req: Request) {
     const { title, content, vibe, status, isPaid, colorScheme } = parsed.data;
 
     const email = user.emailAddresses[0]?.emailAddress || "no-email";
-    const handle = user.username || user.firstName || `user_${user.id.slice(-5)}`;
+    const handle = buildHandle(user.id, user.username, user.firstName);
 
-    await db.insert(users).values({
+    await upsertUserRecord({
       id: user.id,
       email: email,
       handle: handle,
-    }).onConflictDoNothing();
+    });
+
+    const plan = await getUserPlan(user.id);
+    const effectiveVibe = plan === 'pro' ? vibe : 'neutral';
+    const effectiveColorScheme = plan === 'pro' ? (colorScheme || null) : null;
 
     if (status === 'published') {
       const rateLimitError = await checkPublishRateLimit(user.id);
@@ -137,15 +142,15 @@ export async function POST(req: Request) {
       title: title,
       slug: slug,
       content: sanitizedContent,
-      vibeTheme: vibe,
+      vibeTheme: effectiveVibe,
       status: status,
       isPaid: isPaid,
-      colorScheme: colorScheme || null,
+      colorScheme: effectiveColorScheme,
       publishedAt: status === 'published' ? new Date() : null,
     }).returning();
 
     if (status === 'published') {
-      await sendPublishEmails(user.id, handle, title, sanitizedContent, colorScheme);
+      await sendPublishEmails(user.id, handle, title, sanitizedContent, effectiveColorScheme);
     }
 
     return NextResponse.json(newPost[0]);
@@ -170,6 +175,17 @@ export async function PUT(req: Request) {
 
     const { id: postId, title, content, vibe, status, isPaid, colorScheme } = parsed.data;
 
+    const email = user.emailAddresses[0]?.emailAddress || "no-email";
+    const handle = buildHandle(user.id, user.username, user.firstName);
+
+    await upsertUserRecord({
+      id: user.id,
+      email: email,
+      handle: handle,
+    });
+
+    const plan = await getUserPlan(user.id);
+
     const existingPost = await db.select().from(posts).where(eq(posts.id, postId));
     if (existingPost.length === 0 || existingPost[0].authorId !== user.id) {
       return new NextResponse("Not Found or Unauthorized", { status: 404 });
@@ -186,12 +202,13 @@ export async function PUT(req: Request) {
     }
 
     const sanitizedContent = sanitizeHtml(content || "", SANITIZE_OPTIONS);
-    const finalColorScheme = colorScheme !== undefined ? colorScheme : existingPost[0].colorScheme;
+    const finalVibe = plan === 'pro' ? (vibe || existingPost[0].vibeTheme) : 'neutral';
+    const finalColorScheme = plan === 'pro' ? (colorScheme !== undefined ? colorScheme : existingPost[0].colorScheme) : null;
 
     const updatedPost = await db.update(posts).set({
       title: title || existingPost[0].title,
       content: sanitizedContent,
-      vibeTheme: vibe || existingPost[0].vibeTheme,
+      vibeTheme: finalVibe,
       status: status || existingPost[0].status,
       isPaid: isPaid !== undefined ? isPaid : existingPost[0].isPaid,
       colorScheme: finalColorScheme,
@@ -199,7 +216,6 @@ export async function PUT(req: Request) {
     }).where(eq(posts.id, postId)).returning();
 
     if (isNowPublished && wasDraft) {
-      const handle = user.username || user.firstName || `user_${user.id.slice(-5)}`;
       await sendPublishEmails(user.id, handle, title || existingPost[0].title, sanitizedContent, finalColorScheme);
     }
 

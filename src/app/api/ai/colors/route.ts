@@ -3,9 +3,21 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 import { NextResponse } from 'next/server';
 import { aiColorsSchema } from '@/lib/validations';
+import { currentUser } from '@clerk/nextjs/server';
+import { getUserPlan } from '@/lib/user-plans';
 
 export async function POST(req: Request) {
   try {
+    const user = await currentUser();
+    if (!user) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    const plan = await getUserPlan(user.id);
+    if (plan !== 'pro') {
+      return new NextResponse("Upgrade to Pro to access vibe colors.", { status: 403 });
+    }
+
     const body = await req.json();
     const parsed = aiColorsSchema.safeParse(body);
     if (!parsed.success) {
