@@ -35,6 +35,76 @@ async function isHobbyLimitReached(authorId: string) {
   return Number(value) >= 500;
 }
 
+function getAppUrl(req: Request) {
+  return process.env.NEXT_PUBLIC_APP_URL || req.headers.get('origin') || 'http://localhost:3000';
+}
+
+async function createSubscriptionSession(authorId: string, req: Request) {
+  if (await isHobbyLimitReached(authorId)) {
+    return new NextResponse("Author has reached the hobby subscriber limit", { status: 403 });
+  }
+
+  const user = await currentUser();
+  const customerEmail = user?.emailAddresses[0]?.emailAddress;
+  const appUrl = getAppUrl(req);
+
+  const session = await stripe.checkout.sessions.create({
+    mode: 'subscription',
+    payment_method_types: ['card'],
+    customer_email: customerEmail || undefined,
+    line_items: [
+      {
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'Author Subscription',
+            description: 'Follow this author and get their emails.',
+          },
+          unit_amount: AUTHOR_SUBSCRIPTION_PRICE_CENTS,
+          recurring: { interval: 'month' },
+        },
+        quantity: 1,
+      },
+    ],
+    success_url: `${appUrl}/?success=true`,
+    cancel_url: `${appUrl}/?canceled=true`,
+    metadata: {
+      planType: 'author',
+      authorId: authorId,
+    },
+  });
+
+  if (session.url) {
+    return NextResponse.redirect(session.url, 303);
+  }
+
+  return new NextResponse("Failed to create session", { status: 500 });
+}
+
+export async function GET(req: Request) {
+  try {
+    const url = new URL(req.url);
+    const authorId = url.searchParams.get('authorId');
+
+    if (!authorId) {
+      return new NextResponse("Author ID required", { status: 400 });
+    }
+
+    const user = await currentUser();
+    if (!user) {
+      const appUrl = getAppUrl(req);
+      const redirectUrl = `${appUrl}/api/checkout?authorId=${encodeURIComponent(authorId)}`;
+      const signInUrl = `${appUrl}/sign-in?redirect_url=${encodeURIComponent(redirectUrl)}`;
+      return NextResponse.redirect(signInUrl, 303);
+    }
+
+    return createSubscriptionSession(authorId, req);
+  } catch (err) {
+    console.error("Stripe Checkout Error:", err);
+    return new NextResponse("Internal Error", { status: 500 });
+  }
+}
+
 export async function POST(req: Request) {
   try {
     if (!isValidOrigin(req)) {
@@ -48,45 +118,15 @@ export async function POST(req: Request) {
       return new NextResponse("Author ID required", { status: 400 });
     }
 
-    if (await isHobbyLimitReached(authorId)) {
-      return new NextResponse("Author has reached the hobby subscriber limit", { status: 403 });
-    }
-
     const user = await currentUser();
-    const customerEmail = user?.emailAddresses[0]?.emailAddress;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || req.headers.get('origin') || 'http://localhost:3000';
-
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      payment_method_types: ['card'],
-      customer_email: customerEmail || undefined,
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: 'Author Subscription',
-              description: 'Follow this author and get their emails.',
-            },
-            unit_amount: AUTHOR_SUBSCRIPTION_PRICE_CENTS,
-            recurring: { interval: 'month' },
-          },
-          quantity: 1,
-        },
-      ],
-      success_url: `${appUrl}/?success=true`,
-      cancel_url: `${appUrl}/?canceled=true`,
-      metadata: {
-        planType: 'author',
-        authorId: authorId,
-      },
-    });
-
-    if (session.url) {
-      return NextResponse.redirect(session.url, 303);
+    if (!user) {
+      const appUrl = getAppUrl(req);
+      const redirectUrl = `${appUrl}/api/checkout?authorId=${encodeURIComponent(authorId)}`;
+      const signInUrl = `${appUrl}/sign-in?redirect_url=${encodeURIComponent(redirectUrl)}`;
+      return NextResponse.redirect(signInUrl, 303);
     }
 
-    return new NextResponse("Failed to create session", { status: 500 });
+    return createSubscriptionSession(authorId, req);
   } catch (err) {
     console.error("Stripe Checkout Error:", err);
     return new NextResponse("Internal Error", { status: 500 });
