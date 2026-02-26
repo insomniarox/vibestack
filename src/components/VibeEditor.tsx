@@ -169,10 +169,10 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
 
   return (
     <>
-      <div className="flex flex-col xl:flex-row gap-6 w-full h-full min-h-0">
+      <div className="flex flex-col xl:flex-row gap-6 w-full h-[calc(100vh-140px)]">
         
         {/* Main Editor Area */}
-        <div className="flex-1 glass border border-border rounded-2xl flex flex-col relative overflow-hidden min-h-0">
+        <div className="flex-1 glass border border-border rounded-2xl flex flex-col relative overflow-hidden">
           {/* Editor Top Bar */}
           <div className="flex items-center justify-between p-4 border-b border-border bg-surface/50 backdrop-blur-md z-10">
             <input 
@@ -213,12 +213,12 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
           </div>
           
           {/* Editor Canvas */}
-          <div className="flex-1 p-8 overflow-y-auto relative">
+          <div className="flex-1 p-8 overflow-hidden relative">
             <textarea 
               placeholder="Write in 4D..."
               value={content}
               onChange={(e) => { setContent(e.target.value); setIsDirty(true); }}
-              className="w-full h-full bg-transparent text-gray-300 text-lg leading-relaxed focus:outline-none resize-none font-serif placeholder:font-sans placeholder:text-gray-700 relative z-10"
+              className="w-full h-full overflow-y-auto bg-transparent text-gray-300 text-lg leading-relaxed focus:outline-none resize-none font-serif placeholder:font-sans placeholder:text-gray-700 relative z-10"
             />
             
             {/* Subtle Horizon Glow inside the editor */}
@@ -227,7 +227,7 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
         </div>
 
         {/* AI Vibe Sidebar */}
-        <div className="w-full xl:w-80 glass border border-border rounded-2xl p-6 flex flex-col gap-8 overflow-y-auto min-h-0">
+        <div className="w-full xl:w-80 glass border border-border rounded-2xl p-6 flex flex-col gap-8 overflow-y-auto">
           
           {/* Monetization / Paywall */}
           <div>

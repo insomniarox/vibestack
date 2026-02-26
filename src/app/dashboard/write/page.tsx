@@ -33,7 +33,7 @@ export default async function WritePage({ searchParams }: { searchParams: Promis
   }
 
   return (
-    <div className="h-screen overflow-hidden bg-background text-foreground p-6 flex flex-col">
+    <div className="min-h-screen bg-background text-foreground p-6">
       
       {/* Top Navigation for Editor */}
       <div className="max-w-[1600px] mx-auto mb-6 flex items-center justify-between">
@@ -52,7 +52,7 @@ export default async function WritePage({ searchParams }: { searchParams: Promis
       </div>
 
       {/* Editor Container */}
-      <main className="max-w-[1600px] mx-auto flex-1 w-full min-h-0 overflow-hidden">
+      <main className="max-w-[1600px] mx-auto">
         <VibeEditor initialPost={initialPost} plan={plan} />
       </main>
       
