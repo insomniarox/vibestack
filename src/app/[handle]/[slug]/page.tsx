@@ -48,8 +48,7 @@ export default async function PostPage({ params }: { params: Promise<{ handle: s
   
   // If paid & unsubscribed, only show the first 2 paragraphs as a teaser
   const fullContent = post.content || "";
-  const markdownToRender = showPaywall ? getMarkdownTeaser(fullContent, 2) : fullContent;
-  const renderedHtml = renderMarkdownToHtml(markdownToRender);
+  const renderedHtml = showPaywall ? getMarkdownTeaser(fullContent, 2, 350) : renderMarkdownToHtml(fullContent);
 
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-hidden">

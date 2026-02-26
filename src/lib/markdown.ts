@@ -37,12 +37,41 @@ export function renderMarkdownToHtml(markdownText: string) {
   return sanitizeHtml(html, SANITIZE_OPTIONS);
 }
 
-export function getMarkdownTeaser(markdownText: string, paragraphCount = 2) {
+export function getMarkdownTeaser(markdownText: string, paragraphCount = 2, maxWords = 300) {
   const trimmed = (markdownText || "").trim();
   if (!trimmed) return "";
 
-  const blocks = trimmed.split(/\n\s*\n/);
-  return blocks.slice(0, paragraphCount).join("\n\n");
+  const tokens = markdown.parse(trimmed, {});
+  let paragraphsSeen = 0;
+  let endIndex = -1;
+
+  for (let i = 0; i < tokens.length; i += 1) {
+    const token = tokens[i];
+    if (token.type === "paragraph_open") {
+      paragraphsSeen += 1;
+    }
+    if (paragraphsSeen >= paragraphCount && token.type === "paragraph_close") {
+      endIndex = i;
+      break;
+    }
+  }
+
+  const teaserTokens = endIndex >= 0 ? tokens.slice(0, endIndex + 1) : tokens;
+  const html = markdown.renderer.render(teaserTokens, markdown.options, {});
+  const sanitized = sanitizeHtml(html, SANITIZE_OPTIONS);
+
+  if (!maxWords || maxWords <= 0) return sanitized;
+
+  const plain = sanitizeHtml(sanitized, { allowedTags: [], allowedAttributes: {} })
+    .replace(/\s+/g, " ")
+    .trim();
+  const words = plain ? plain.split(" ") : [];
+
+  if (words.length <= maxWords) return sanitized;
+
+  const truncated = words.slice(0, maxWords).join(" ") + "...";
+  const truncatedHtml = markdown.render(truncated);
+  return sanitizeHtml(truncatedHtml, SANITIZE_OPTIONS);
 }
 
 export function markdownToPlainText(markdownText: string) {
