@@ -6,7 +6,7 @@ import { buildHandle, upsertUserRecord } from "@/lib/user-plans";
 const PRO_SUBSCRIPTION_PRICE_CENTS = parseInt(process.env.PRO_SUBSCRIPTION_PRICE_CENTS || "1200", 10);
 
 async function handle(req: Request) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || req.headers.get("origin") || "http://localhost:3000";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin || "http://localhost:3000";
   const user = await currentUser();
 
   if (!user) {

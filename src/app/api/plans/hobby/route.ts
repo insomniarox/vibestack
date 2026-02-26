@@ -3,7 +3,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { buildHandle, setUserPlan, upsertUserRecord } from "@/lib/user-plans";
 
 async function handle(req: Request) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || req.headers.get("origin") || "http://localhost:3000";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin || "http://localhost:3000";
   const user = await currentUser();
 
   if (!user) {
