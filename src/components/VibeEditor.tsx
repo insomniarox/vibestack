@@ -169,10 +169,10 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
 
   return (
     <>
-      <div className="flex flex-col xl:flex-row gap-6 w-full h-[calc(100vh-140px)]">
+      <div className="flex flex-col xl:flex-row gap-6 w-full h-full min-h-0">
         
         {/* Main Editor Area */}
-        <div className="flex-1 glass border border-border rounded-2xl flex flex-col relative overflow-hidden">
+        <div className="flex-1 glass border border-border rounded-2xl flex flex-col relative overflow-hidden min-h-0">
           {/* Editor Top Bar */}
           <div className="flex items-center justify-between p-4 border-b border-border bg-surface/50 backdrop-blur-md z-10">
             <input 
@@ -227,7 +227,7 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
         </div>
 
         {/* AI Vibe Sidebar */}
-        <div className="w-full xl:w-80 glass border border-border rounded-2xl p-6 flex flex-col gap-8 overflow-y-auto">
+        <div className="w-full xl:w-80 glass border border-border rounded-2xl p-6 flex flex-col gap-8 overflow-y-auto min-h-0">
           
           {/* Monetization / Paywall */}
           <div>
