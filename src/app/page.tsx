@@ -1,28 +1,45 @@
 import Link from "next/link";
 import { ArrowRight, Sparkles, Zap, Layers, Cpu, Github, Twitter, MessageSquare, Check } from "lucide-react";
 import SmokeRings from "@/components/SmokeRings";
+import { auth } from "@clerk/nextjs/server";
+import HomeSignOutButton from "@/components/HomeSignOutButton";
 
-export default function Home() {
+export default async function Home() {
+  const { userId } = await auth();
+  const dashboardHref = "/dashboard";
+  const signInHref = "/sign-in?redirect_url=%2Fdashboard";
+  const startWritingHref = userId ? dashboardHref : signInHref;
   return (
     <div className="bg-background min-h-screen text-foreground">
 
       {/* Top Nav */}
-      <nav className="absolute top-0 w-full flex justify-between items-center p-6 z-50">
-        <div className="flex items-center gap-3">
+      <nav className="absolute top-0 w-full flex items-center p-6 z-50">
+        <div className="flex items-center gap-3 w-[220px]">
           <div className="flex items-center justify-center w-7 h-7 rounded bg-primary text-black font-bold text-lg font-mono">
             V
           </div>
           <span className="font-semibold text-lg tracking-tight">VibeStack</span>
         </div>
-        <div className="glass px-6 py-2 rounded-full hidden md:flex items-center gap-6 text-sm text-gray-400">
-          <Link href="#" className="hover:text-white transition-colors">Home</Link>
-          <Link href="#features" className="hover:text-white transition-colors">Features</Link>
-          <Link href="#pricing" className="hover:text-white transition-colors">Pricing</Link>
+        <div className="flex-1 flex justify-center">
+          <div className="glass px-6 py-2 rounded-full hidden md:flex items-center gap-6 text-sm text-gray-400">
+            <Link href="#" className="hover:text-white transition-colors">Home</Link>
+            <Link href="#features" className="hover:text-white transition-colors">Features</Link>
+            <Link href="#pricing" className="hover:text-white transition-colors">Pricing</Link>
+          </div>
         </div>
-        <div>
-          <Link href="/dashboard" className="glass px-5 py-2 rounded-full text-sm font-medium hover:bg-white/5 transition-colors">
-            Sign In
-          </Link>
+        <div className="flex items-center gap-3 w-[220px] justify-end">
+          {userId ? (
+            <>
+              <Link href={dashboardHref} className="bg-primary text-black px-5 py-2 rounded-full text-sm font-medium hover:bg-primary/90 transition-colors">
+                Dashboard
+              </Link>
+              <HomeSignOutButton />
+            </>
+          ) : (
+            <Link href={signInHref} className="glass px-5 py-2 rounded-full text-sm font-medium hover:bg-white/5 transition-colors">
+              Sign In
+            </Link>
+          )}
         </div>
       </nav>
 
@@ -31,7 +48,7 @@ export default function Home() {
         <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20">
           {/* Horizon Stage Glow */}
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-[800px] h-[400px] bg-horizon/40 blur-[120px] rounded-full pointer-events-none" />
-          
+
           {/* Animated Morphing Smoke Rings behind the H1 (Framer Motion) */}
           <SmokeRings />
 
@@ -42,7 +59,7 @@ export default function Home() {
           </div>
 
           {/* H1 Headline */}
-          <h1 className="text-6xl md:text-8xl font-bold tracking-tighter mb-6 text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 text-center">
+          <h1 className="text-6xl md:text-8xl font-bold tracking-tighter leading-tight mb-6 text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 text-center">
             Stop Writing.<br />Start Vibing.
           </h1>
 
@@ -53,16 +70,16 @@ export default function Home() {
 
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center gap-4 relative z-10">
-            <Link 
-              href="/dashboard" 
+            <Link
+              href={startWritingHref}
               className="group flex items-center gap-2 bg-primary text-black px-8 py-3.5 rounded-full font-semibold hover:scale-105 transition-all duration-200"
             >
               Start Writing
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
-            
-            <Link 
-              href="/feed" 
+
+            <Link
+              href="/feed"
               className="glass flex items-center gap-2 px-8 py-3.5 rounded-full font-semibold hover:bg-white/5 transition-all duration-200"
             >
               <Sparkles className="w-4 h-4 text-horizon" />
@@ -84,7 +101,7 @@ export default function Home() {
             <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Everything you need to scale.</h2>
             <p className="text-gray-400 text-lg">Powerful features wrapped in a sleek, distraction-free interface.</p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {

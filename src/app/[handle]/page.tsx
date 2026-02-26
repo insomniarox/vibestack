@@ -3,7 +3,6 @@ import { users, posts, subscribers } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { currentUser } from "@clerk/nextjs/server";
 
 export default async function AuthorProfile({ params }: { params: Promise<{ handle: string }> }) {
@@ -27,6 +26,7 @@ export default async function AuthorProfile({ params }: { params: Promise<{ hand
   const userEmail = user?.emailAddresses[0]?.emailAddress;
   
   let isSubscribed = false;
+  let unsubscribeToken: string | null = null;
 
   if (user?.id === author.id) {
     isSubscribed = true;
@@ -40,15 +40,25 @@ export default async function AuthorProfile({ params }: { params: Promise<{ hand
     );
     if (subResult.length > 0) {
       isSubscribed = true;
+      unsubscribeToken = subResult[0]?.unsubscribeToken || null;
     }
   }
 
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-black">
-      <nav className="p-6">
-        <Link href="/" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Back to Home
+      <nav className="p-6 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <div className="flex items-center justify-center w-7 h-7 rounded bg-primary text-black font-bold text-lg font-mono">V</div>
+          <span className="font-semibold text-lg tracking-tight">VibeStack</span>
         </Link>
+        {user?.id && (
+          <Link
+            href="/dashboard"
+            className="bg-primary text-black px-5 py-2 rounded-full text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            Go to Dashboard
+          </Link>
+        )}
       </nav>
 
       <main className="max-w-3xl mx-auto px-6 py-20">
@@ -67,8 +77,18 @@ export default async function AuthorProfile({ params }: { params: Promise<{ hand
               </button>
             </form>
           ) : (
-            <div className="mt-8 inline-block px-8 py-3 rounded-full border border-primary/50 text-primary font-semibold glass">
-              Subscribed
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <div className="inline-block px-8 py-3 rounded-full border border-primary/50 text-primary font-semibold glass">
+                Subscribed
+              </div>
+              {unsubscribeToken && user?.id !== author.id && (
+                <Link
+                  href={`/api/unsubscribe?token=${unsubscribeToken}`}
+                  className="inline-flex items-center justify-center px-6 py-3 rounded-full font-semibold bg-red-500 text-black hover:bg-red-400 transition-colors"
+                >
+                  Unsubscribe
+                </Link>
+              )}
             </div>
           )}
         </header>

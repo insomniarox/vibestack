@@ -4,6 +4,7 @@ import { currentUser } from '@clerk/nextjs/server';
 import { db } from '@/db';
 import { subscribers, users } from '@/db/schema';
 import { and, count, eq, ne } from 'drizzle-orm';
+import { PLAN_LIMITS } from '@/lib/user-plans';
 
 const AUTHOR_SUBSCRIPTION_PRICE_CENTS = parseInt(process.env.AUTHOR_SUBSCRIPTION_PRICE_CENTS || "500", 10);
 
@@ -32,7 +33,7 @@ async function isHobbyLimitReached(authorId: string) {
     .from(subscribers)
     .where(and(eq(subscribers.authorId, authorId), ne(subscribers.status, 'unsubscribed')));
 
-  return Number(value) >= 500;
+  return Number(value) >= PLAN_LIMITS.hobby.subscribers;
 }
 
 function getAppUrl(req: Request) {
@@ -47,6 +48,9 @@ async function createSubscriptionSession(authorId: string, req: Request) {
   const user = await currentUser();
   const customerEmail = user?.emailAddresses[0]?.emailAddress;
   const appUrl = getAppUrl(req);
+  const author = await db.select({ handle: users.handle }).from(users).where(eq(users.id, authorId));
+  const authorHandle = author[0]?.handle;
+  const successRedirect = authorHandle ? `${appUrl}/${authorHandle}` : `${appUrl}/`;
 
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
@@ -66,11 +70,12 @@ async function createSubscriptionSession(authorId: string, req: Request) {
         quantity: 1,
       },
     ],
-    success_url: `${appUrl}/?success=true`,
+    success_url: `${successRedirect}?success=true`,
     cancel_url: `${appUrl}/?canceled=true`,
     metadata: {
       planType: 'author',
       authorId: authorId,
+      authorHandle: authorHandle ?? null,
     },
   });
 

@@ -1,4 +1,4 @@
-import { Users, Zap, Plus, FileText } from "lucide-react";
+import { Users, Zap, Plus, FileText, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { db } from "../../db";
 import { posts, subscribers, users } from "../../db/schema";
@@ -54,9 +54,18 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <header className="mb-10">
-        <h1 className="text-4xl font-bold tracking-tight mb-2">Welcome back.</h1>
-        <p className="text-gray-400">Here is what is happening with your newsletter today.</p>
+      <header className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight mb-2">Welcome back.</h1>
+          <p className="text-gray-400">Here is what is happening with your newsletter today.</p>
+        </div>
+        <Link
+          href="/feed"
+          className="glass inline-flex items-center justify-center gap-2 px-5 py-2 rounded-full text-sm font-semibold hover:bg-white/5 transition-colors"
+        >
+          <Sparkles className="w-4 h-4 text-horizon" />
+          Explore the Feed
+        </Link>
       </header>
 
       {/* Brutalist Bento Grid */}

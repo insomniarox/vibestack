@@ -2,12 +2,14 @@ import { db } from "@/db";
 import { posts, users } from "@/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import Link from "next/link";
+import { auth } from "@clerk/nextjs/server";
 
 export const revalidate = 60;
 
 const POSTS_PER_PAGE = 20;
 
 export default async function FeedPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const { userId } = await auth();
   const { page } = await searchParams;
   const currentPage = Math.max(1, parseInt(page || "1", 10) || 1);
   const offset = (currentPage - 1) * POSTS_PER_PAGE;
@@ -33,14 +35,25 @@ export default async function FeedPage({ searchParams }: { searchParams: Promise
   return (
     <div className="min-h-screen bg-background text-foreground py-12 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-3xl mx-auto">
-        <header className="mb-12 flex items-center justify-between">
-          <div>
+        <header className="mb-12">
+          <div className="flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <div className="flex items-center justify-center w-7 h-7 rounded bg-primary text-black font-bold text-lg font-mono">V</div>
+              <span className="font-semibold text-lg tracking-tight">VibeStack</span>
+            </Link>
+            {userId && (
+              <Link
+                href="/dashboard"
+                className="bg-primary text-black px-5 py-2 rounded-full text-sm font-medium hover:bg-primary/90 transition-colors"
+              >
+                Go to Dashboard
+              </Link>
+            )}
+          </div>
+          <div className="mt-8">
             <h1 className="text-4xl font-bold tracking-tight text-white mb-2">The Feed</h1>
             <p className="text-gray-400">Discover the latest vibes from our creators.</p>
           </div>
-          <Link href="/" className="text-sm font-medium text-primary hover:underline flex items-center gap-1">
-            &larr; Home
-          </Link>
         </header>
 
         <div className="space-y-8">

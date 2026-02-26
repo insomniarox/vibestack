@@ -4,6 +4,11 @@ import { eq } from "drizzle-orm";
 
 export type UserPlan = "hobby" | "pro";
 
+export const PLAN_LIMITS: Record<UserPlan, { subscribers: number }> = {
+  hobby: { subscribers: 500 },
+  pro: { subscribers: 10000 },
+};
+
 export function normalizePlan(plan?: string | null): UserPlan {
   return plan === "pro" ? "pro" : "hobby";
 }

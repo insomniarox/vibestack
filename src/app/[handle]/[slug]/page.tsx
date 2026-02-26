@@ -4,7 +4,6 @@ import { eq, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft } from "lucide-react";
 import { currentUser } from "@clerk/nextjs/server";
 
 export default async function PostPage({ params }: { params: Promise<{ handle: string, slug: string }> }) {
@@ -63,8 +62,9 @@ export default async function PostPage({ params }: { params: Promise<{ handle: s
 
       <nav className="p-6 relative z-10 max-w-4xl mx-auto flex justify-between items-center">
         <div className="flex items-center gap-4">
-          <Link href="/" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Home
+          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <div className="flex items-center justify-center w-7 h-7 rounded bg-primary text-black font-bold text-lg font-mono">V</div>
+            <span className="font-semibold text-lg tracking-tight">VibeStack</span>
           </Link>
           <span className="text-border">/</span>
           <Link href={`/${author.handle}`} className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors">
@@ -72,14 +72,24 @@ export default async function PostPage({ params }: { params: Promise<{ handle: s
           </Link>
         </div>
         
-        {!isSubscribed && (
-          <form action="/api/checkout" method="POST">
-            <input type="hidden" name="authorId" value={author.id} />
-            <button type="submit" className="bg-white/10 hover:bg-white/20 text-white px-4 py-1.5 rounded-full text-sm font-medium transition-colors backdrop-blur-md">
-              Subscribe ($5/mo)
-            </button>
-          </form>
-        )}
+        <div className="flex items-center gap-3">
+          {user?.id && (
+            <Link
+              href="/dashboard"
+              className="bg-primary text-black px-5 py-2 rounded-full text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              Go to Dashboard
+            </Link>
+          )}
+          {!isSubscribed && (
+            <form action="/api/checkout" method="POST">
+              <input type="hidden" name="authorId" value={author.id} />
+              <button type="submit" className="bg-white/10 hover:bg-white/20 text-white px-4 py-1.5 rounded-full text-sm font-medium transition-colors backdrop-blur-md">
+                Subscribe ($5/mo)
+              </button>
+            </form>
+          )}
+        </div>
       </nav>
 
       <main className="max-w-3xl mx-auto px-6 py-20 relative z-10">
