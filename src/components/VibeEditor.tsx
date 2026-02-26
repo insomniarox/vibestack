@@ -26,9 +26,23 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
   const [showPreview, setShowPreview] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
 
+  const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+  const ALLOWED_UPLOAD_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
     const file = e.target.files[0];
+
+    if (!ALLOWED_UPLOAD_TYPES.has(file.type)) {
+      alert("Unsupported file type. Use PNG, JPG, GIF, or WebP.");
+      return;
+    }
+
+    if (file.size > MAX_UPLOAD_BYTES) {
+      alert("File too large. Max 5MB.");
+      return;
+    }
+
     setIsUploading(true);
 
     try {

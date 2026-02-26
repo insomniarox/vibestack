@@ -3,6 +3,7 @@ import { posts, users } from "@/db/schema";
 import { eq, desc, sql } from "drizzle-orm";
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
+import { markdownToPlainText } from "@/lib/markdown";
 
 export const revalidate = 60;
 
@@ -94,7 +95,7 @@ export default async function FeedPage({ searchParams }: { searchParams: Promise
                 </h2>
                 
                 <p className="text-gray-400 line-clamp-3 mb-4 text-sm leading-relaxed">
-                  {post.content ? post.content.replace(/<[^>]*>?/gm, '') : ''}
+                  {post.content ? markdownToPlainText(post.content) : ''}
                 </p>
 
                 <div className="flex items-center text-sm font-medium text-primary">

@@ -4,19 +4,11 @@ import { db } from "@/db";
 import { posts, subscribers } from "@/db/schema";
 import { eq, and, gte, ne } from "drizzle-orm";
 import { Resend } from "resend";
-import sanitizeHtml from "sanitize-html";
 import { createPostSchema, updatePostSchema } from "@/lib/validations";
 import { buildHandle, getUserPlan, upsertUserRecord } from "@/lib/user-plans";
+import { renderMarkdownToHtml } from "@/lib/markdown";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-
-const SANITIZE_OPTIONS = {
-  allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'h1', 'h2', 'h3']),
-  allowedAttributes: {
-    ...sanitizeHtml.defaults.allowedAttributes,
-    img: ['src', 'alt', 'width', 'height']
-  }
-};
 
 function parseColorScheme(colorScheme: string | null | undefined) {
   const defaults = { background: '#050505', text: '#e5e5e5', primary: '#D4FF00' };
@@ -60,7 +52,7 @@ async function sendPublishEmails(
   userId: string,
   handle: string,
   title: string,
-  sanitizedContent: string,
+  markdownContent: string,
   colorScheme: string | null | undefined
 ) {
   const userSubs = await db.select().from(subscribers).where(
@@ -75,6 +67,8 @@ async function sendPublishEmails(
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const colors = parseColorScheme(colorScheme);
 
+  const htmlContent = renderMarkdownToHtml(markdownContent);
+
   const emails = userSubs.map(sub => ({
     from: 'VibeStack <onboarding@resend.dev>',
     to: sub.email,
@@ -83,7 +77,7 @@ async function sendPublishEmails(
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: ${colors.background}; color: ${colors.text}; border-radius: 8px;">
         <h1 style="color: ${colors.primary};">${title}</h1>
         <div style="font-size: 16px; line-height: 1.6; color: ${colors.text}; opacity: 0.9;">
-          ${sanitizedContent.replace(/\n/g, '<br/>')}
+          ${htmlContent}
         </div>
         <hr style="border: 1px solid rgba(255,255,255,0.1); margin: 30px 0;" />
         <p style="color: ${colors.text}; font-size: 12px; text-align: center; opacity: 0.5;">Sent via VibeStack ⚡️</p>
@@ -132,25 +126,40 @@ export async function POST(req: Request) {
       }
     }
 
-    const sanitizedContent = sanitizeHtml(content, SANITIZE_OPTIONS);
+    const baseSlug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'post';
 
-    const baseSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    const slug = `${baseSlug}-${Math.random().toString(36).substring(2, 8)}`;
+    let newPost: typeof posts.$inferSelect[] = [];
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const slug = `${baseSlug}-${Math.random().toString(36).substring(2, 8)}`;
+      try {
+        newPost = await db.insert(posts).values({
+          authorId: user.id,
+          title: title,
+          slug: slug,
+          content: content,
+          vibeTheme: effectiveVibe,
+          status: status,
+          isPaid: isPaid,
+          colorScheme: effectiveColorScheme,
+          publishedAt: status === 'published' ? new Date() : null,
+        }).returning();
+        break;
+      } catch (error) {
+        const code = (error as { code?: string }).code;
+        if (code === '23505') continue;
+        throw error;
+      }
+    }
 
-    const newPost = await db.insert(posts).values({
-      authorId: user.id,
-      title: title,
-      slug: slug,
-      content: sanitizedContent,
-      vibeTheme: effectiveVibe,
-      status: status,
-      isPaid: isPaid,
-      colorScheme: effectiveColorScheme,
-      publishedAt: status === 'published' ? new Date() : null,
-    }).returning();
+    if (newPost.length === 0) {
+      return new NextResponse("Failed to create a unique slug", { status: 500 });
+    }
 
     if (status === 'published') {
-      await sendPublishEmails(user.id, handle, title, sanitizedContent, effectiveColorScheme);
+      await sendPublishEmails(user.id, handle, title, content, effectiveColorScheme);
     }
 
     return NextResponse.json(newPost[0]);
@@ -201,22 +210,27 @@ export async function PUT(req: Request) {
       }
     }
 
-    const sanitizedContent = sanitizeHtml(content || "", SANITIZE_OPTIONS);
     const finalVibe = plan === 'pro' ? (vibe || existingPost[0].vibeTheme) : 'neutral';
     const finalColorScheme = plan === 'pro' ? (colorScheme !== undefined ? colorScheme : existingPost[0].colorScheme) : null;
 
-    const updatedPost = await db.update(posts).set({
+    const updatePayload: Partial<typeof posts.$inferInsert> = {
       title: title || existingPost[0].title,
-      content: sanitizedContent,
       vibeTheme: finalVibe,
       status: status || existingPost[0].status,
       isPaid: isPaid !== undefined ? isPaid : existingPost[0].isPaid,
       colorScheme: finalColorScheme,
       publishedAt: isNowPublished && wasDraft ? new Date() : existingPost[0].publishedAt,
-    }).where(eq(posts.id, postId)).returning();
+    };
+
+    if (content !== undefined) {
+      updatePayload.content = content;
+    }
+
+    const updatedPost = await db.update(posts).set(updatePayload).where(eq(posts.id, postId)).returning();
 
     if (isNowPublished && wasDraft) {
-      await sendPublishEmails(user.id, handle, title || existingPost[0].title, sanitizedContent, finalColorScheme);
+      const contentForEmail = content !== undefined ? content : (existingPost[0].content || "");
+      await sendPublishEmails(user.id, handle, title || existingPost[0].title, contentForEmail, finalColorScheme);
     }
 
     return NextResponse.json(updatedPost[0]);

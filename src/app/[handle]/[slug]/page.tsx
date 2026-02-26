@@ -3,8 +3,8 @@ import { users, posts, subscribers } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { currentUser } from "@clerk/nextjs/server";
+import { getMarkdownTeaser, renderMarkdownToHtml } from "@/lib/markdown";
 
 export default async function PostPage({ params }: { params: Promise<{ handle: string, slug: string }> }) {
   const { handle, slug } = await params;
@@ -47,8 +47,9 @@ export default async function PostPage({ params }: { params: Promise<{ handle: s
   const showPaywall = post.isPaid && !isSubscribed;
   
   // If paid & unsubscribed, only show the first 2 paragraphs as a teaser
-  const paragraphs = post.content?.split('\n') || [];
-  const contentToDisplay = showPaywall ? paragraphs.slice(0, 2) : paragraphs;
+  const fullContent = post.content || "";
+  const markdownToRender = showPaywall ? getMarkdownTeaser(fullContent, 2) : fullContent;
+  const renderedHtml = renderMarkdownToHtml(markdownToRender);
 
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
@@ -107,25 +108,7 @@ export default async function PostPage({ params }: { params: Promise<{ handle: s
 
         {/* The Post Content using Instrument Serif for that premium feel */}
         <article className="prose prose-invert prose-lg md:prose-xl mx-auto font-serif tracking-wide leading-relaxed text-gray-300 relative" style={{ fontFamily: 'var(--font-instrument-serif), serif' }}>
-          {contentToDisplay.map((paragraph, i) => {
-            // Check if it's a markdown image
-            if (paragraph.startsWith('![') && paragraph.includes('](')) {
-              const alt = paragraph.match(/\[(.*?)\]/)?.[1] || 'Image';
-              const src = paragraph.match(/\((.*?)\)/)?.[1] || '';
-              return (
-                <Image
-                  key={i}
-                  src={src}
-                  alt={alt}
-                  width={1200}
-                  height={800}
-                  className="rounded-xl w-full my-8 border border-border"
-                  unoptimized
-                />
-              );
-            }
-            return <p key={i} className="mb-6">{paragraph}</p>;
-          })}
+          <div dangerouslySetInnerHTML={{ __html: renderedHtml }} />
 
           {showPaywall && (
             <div className="relative mt-4 pt-24 pb-12 glass border border-primary/30 rounded-2xl text-center overflow-hidden flex flex-col items-center justify-center font-sans">

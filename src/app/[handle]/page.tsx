@@ -1,12 +1,17 @@
 import { db } from "@/db";
 import { users, posts, subscribers } from "@/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { currentUser } from "@clerk/nextjs/server";
 
-export default async function AuthorProfile({ params }: { params: Promise<{ handle: string }> }) {
+const POSTS_PER_PAGE = 12;
+
+export default async function AuthorProfile({ params, searchParams }: { params: Promise<{ handle: string }>; searchParams: Promise<{ page?: string }> }) {
   const { handle } = await params;
+  const { page } = await searchParams;
+  const currentPage = Math.max(1, parseInt(page || "1", 10) || 1);
+  const offset = (currentPage - 1) * POSTS_PER_PAGE;
   
   // 1. Fetch Author
   const userResult = await db.select().from(users).where(eq(users.handle, handle));
@@ -17,9 +22,18 @@ export default async function AuthorProfile({ params }: { params: Promise<{ hand
   }
 
   // 2. Fetch Published Posts
-  const authorPosts = await db.select().from(posts)
-    .where(and(eq(posts.authorId, author.id), eq(posts.status, 'published')))
-    .orderBy(desc(posts.publishedAt));
+  const [authorPosts, totalResult] = await Promise.all([
+    db.select().from(posts)
+      .where(and(eq(posts.authorId, author.id), eq(posts.status, 'published')))
+      .orderBy(desc(posts.publishedAt))
+      .limit(POSTS_PER_PAGE)
+      .offset(offset),
+    db.select({ count: sql<number>`count(*)` }).from(posts)
+      .where(and(eq(posts.authorId, author.id), eq(posts.status, 'published'))),
+  ]);
+
+  const totalPosts = Number(totalResult[0].count);
+  const totalPages = Math.ceil(totalPosts / POSTS_PER_PAGE);
 
   // 3. Subscription Status
   const user = await currentUser();
@@ -119,6 +133,30 @@ export default async function AuthorProfile({ params }: { params: Promise<{ hand
             </div>
           )}
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-12">
+            {currentPage > 1 && (
+              <Link
+                href={`/${author.handle}?page=${currentPage - 1}`}
+                className="px-4 py-2 glass border border-border rounded-lg text-sm hover:bg-white/5 transition-colors"
+              >
+                &larr; Previous
+              </Link>
+            )}
+            <span className="text-sm text-gray-400 font-mono">
+              Page {currentPage} of {totalPages}
+            </span>
+            {currentPage < totalPages && (
+              <Link
+                href={`/${author.handle}?page=${currentPage + 1}`}
+                className="px-4 py-2 glass border border-border rounded-lg text-sm hover:bg-white/5 transition-colors"
+              >
+                Next &rarr;
+              </Link>
+            )}
+          </div>
+        )}
       </main>
     </div>
   );
