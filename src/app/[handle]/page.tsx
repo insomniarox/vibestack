@@ -6,12 +6,13 @@ import { eq, and, desc, or, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { currentUser } from "@clerk/nextjs/server";
+import { stripe } from "@/lib/stripe";
 
 const POSTS_PER_PAGE = 12;
 
-export default async function AuthorProfile({ params, searchParams }: { params: Promise<{ handle: string }>; searchParams: Promise<{ page?: string }> }) {
+export default async function AuthorProfile({ params, searchParams }: { params: Promise<{ handle: string }>; searchParams: Promise<{ page?: string; success?: string; session_id?: string }> }) {
   const { handle } = await params;
-  const { page } = await searchParams;
+  const { page, session_id: sessionId } = await searchParams;
   const currentPage = Math.max(1, parseInt(page || "1", 10) || 1);
   const offset = (currentPage - 1) * POSTS_PER_PAGE;
   
@@ -21,6 +22,59 @@ export default async function AuthorProfile({ params, searchParams }: { params: 
   
   if (!author) {
     return notFound();
+  }
+
+  const user = await currentUser();
+  const userEmail = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses[0]?.emailAddress;
+  const normalizedEmail = userEmail?.trim().toLowerCase();
+
+  if (sessionId && user?.id) {
+    try {
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      const subscriptionId = typeof session.subscription === "string"
+        ? session.subscription
+        : session.subscription?.id;
+      const sessionAuthorId = session.metadata?.authorId;
+      const subscriberUserId = session.metadata?.subscriberUserId || session.metadata?.userId || null;
+      const email = session.customer_email || session.customer_details?.email;
+      const normalizedSessionEmail = email?.trim().toLowerCase();
+
+      if (
+        session.payment_status === "paid" &&
+        sessionAuthorId === author.id &&
+        subscriberUserId === user.id &&
+        subscriptionId &&
+        normalizedSessionEmail
+      ) {
+        const matchClauses = [sql`lower(${subscribers.email}) = ${normalizedSessionEmail}`];
+        if (subscriberUserId) {
+          matchClauses.push(eq(subscribers.subscriberUserId, subscriberUserId));
+        }
+
+        const existing = await db.select().from(subscribers).where(
+          and(eq(subscribers.authorId, author.id), or(...matchClauses))
+        );
+
+        if (existing.length > 0) {
+          await db.update(subscribers).set({
+            status: "active",
+            stripeSubscriptionId: subscriptionId,
+            email: normalizedSessionEmail,
+            subscriberUserId: subscriberUserId ?? existing[0]?.subscriberUserId ?? null,
+          }).where(eq(subscribers.id, existing[0].id));
+        } else {
+          await db.insert(subscribers).values({
+            authorId: author.id,
+            subscriberUserId: subscriberUserId ?? null,
+            email: normalizedSessionEmail,
+            status: "active",
+            stripeSubscriptionId: subscriptionId,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Stripe checkout sync error:", error);
+    }
   }
 
   // 2. Fetch Published Posts
@@ -38,10 +92,6 @@ export default async function AuthorProfile({ params, searchParams }: { params: 
   const totalPages = Math.ceil(totalPosts / POSTS_PER_PAGE);
 
   // 3. Subscription Status
-  const user = await currentUser();
-  const userEmail = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses[0]?.emailAddress;
-  const normalizedEmail = userEmail?.trim().toLowerCase();
-  
   let isSubscribed = false;
   let unsubscribeToken: string | null = null;
 

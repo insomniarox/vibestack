@@ -71,7 +71,7 @@ async function createSubscriptionSession(authorId: string, req: Request) {
         quantity: 1,
       },
     ],
-    success_url: `${successRedirect}?success=true`,
+    success_url: `${successRedirect}?success=true&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl}/?canceled=true`,
     metadata: {
       planType: 'author',
