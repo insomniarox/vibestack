@@ -1,8 +1,10 @@
+export const dynamic = "force-dynamic";
+
 import { Users, Zap, Plus, FileText, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { db } from "../../db";
 import { posts, subscribers, users } from "../../db/schema";
-import { eq, desc, count, and } from "drizzle-orm";
+import { eq, desc, count, and, ne } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 import DeletePostButton from "@/components/DeletePostButton";
 
@@ -29,7 +31,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       }
 
       const [subCountResult, publishedCountResult, totalCountResult, paginatedPosts, latestPublished] = await Promise.all([
-        db.select({ value: count() }).from(subscribers).where(eq(subscribers.authorId, userId)),
+        db.select({ value: count() }).from(subscribers).where(and(eq(subscribers.authorId, userId), ne(subscribers.status, 'unsubscribed'))),
         db.select({ value: count() }).from(posts).where(
           and(eq(posts.authorId, userId), eq(posts.status, 'published'))
         ),

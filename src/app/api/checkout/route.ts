@@ -4,7 +4,7 @@ import { currentUser } from '@clerk/nextjs/server';
 import { db } from '@/db';
 import { subscribers, users } from '@/db/schema';
 import { and, count, eq, ne } from 'drizzle-orm';
-import { PLAN_LIMITS } from '@/lib/user-plans';
+import { PLAN_LIMITS, buildHandle, upsertUserRecord } from '@/lib/user-plans';
 
 const AUTHOR_SUBSCRIPTION_PRICE_CENTS = parseInt(process.env.AUTHOR_SUBSCRIPTION_PRICE_CENTS || "500", 10);
 
@@ -53,6 +53,21 @@ async function createSubscriptionSession(authorId: string, req: Request) {
   const authorHandle = author[0]?.handle;
   const successRedirect = authorHandle ? `${appUrl}/${authorHandle}` : `${appUrl}/`;
 
+  // Ensure subscriber user record exists in DB so the subscription can be linked
+  if (user) {
+    const email = user.emailAddresses[0]?.emailAddress || "no-email";
+    const handle = buildHandle(user.id, user.username, user.firstName);
+    await upsertUserRecord({ id: user.id, email, handle });
+  }
+
+  // Build metadata - only include non-null values to avoid Stripe serializing "null" strings
+  const metadata: Record<string, string> = {
+    planType: 'author',
+    authorId: authorId,
+  };
+  if (authorHandle) metadata.authorHandle = authorHandle;
+  if (user?.id) metadata.subscriberUserId = user.id;
+
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
     payment_method_types: ['card'],
@@ -73,12 +88,7 @@ async function createSubscriptionSession(authorId: string, req: Request) {
     ],
     success_url: `${successRedirect}?success=true&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl}/?canceled=true`,
-    metadata: {
-      planType: 'author',
-      authorId: authorId,
-      authorHandle: authorHandle ?? null,
-      subscriberUserId: user?.id ?? null,
-    },
+    metadata,
   });
 
   if (session.url) {

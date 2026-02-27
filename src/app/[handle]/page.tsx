@@ -35,20 +35,23 @@ export default async function AuthorProfile({ params, searchParams }: { params: 
         ? session.subscription
         : session.subscription?.id;
       const sessionAuthorId = session.metadata?.authorId;
-      const subscriberUserId = session.metadata?.subscriberUserId || session.metadata?.userId || null;
+      const subscriberUserId = session.metadata?.subscriberUserId || null;
       const email = session.customer_email || session.customer_details?.email;
       const normalizedSessionEmail = email?.trim().toLowerCase();
+
+      // Validate the session belongs to this author and is paid.
+      // Use the current user ID as the subscriber if metadata is missing (fallback).
+      const effectiveSubscriberUserId = subscriberUserId || user.id;
 
       if (
         session.payment_status === "paid" &&
         sessionAuthorId === author.id &&
-        subscriberUserId === user.id &&
         subscriptionId &&
         normalizedSessionEmail
       ) {
         const matchClauses = [sql`lower(${subscribers.email}) = ${normalizedSessionEmail}`];
-        if (subscriberUserId) {
-          matchClauses.push(eq(subscribers.subscriberUserId, subscriberUserId));
+        if (effectiveSubscriberUserId) {
+          matchClauses.push(eq(subscribers.subscriberUserId, effectiveSubscriberUserId));
         }
 
         const existing = await db.select().from(subscribers).where(
@@ -60,12 +63,12 @@ export default async function AuthorProfile({ params, searchParams }: { params: 
             status: "active",
             stripeSubscriptionId: subscriptionId,
             email: normalizedSessionEmail,
-            subscriberUserId: subscriberUserId ?? existing[0]?.subscriberUserId ?? null,
+            subscriberUserId: effectiveSubscriberUserId ?? existing[0]?.subscriberUserId ?? null,
           }).where(eq(subscribers.id, existing[0].id));
         } else {
           await db.insert(subscribers).values({
             authorId: author.id,
-            subscriberUserId: subscriberUserId ?? null,
+            subscriberUserId: effectiveSubscriberUserId ?? null,
             email: normalizedSessionEmail,
             status: "active",
             stripeSubscriptionId: subscriptionId,

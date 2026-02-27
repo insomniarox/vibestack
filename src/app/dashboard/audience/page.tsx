@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { Users, MailOpen, MousePointerClick, UserMinus, Search, Download, ArrowLeft } from "lucide-react";
 import { db } from "../../../db";

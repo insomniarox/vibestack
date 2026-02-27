@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { subscribers } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { stripe } from "@/lib/stripe";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -44,6 +45,18 @@ export async function GET(req: Request) {
     const existing = await db.select().from(subscribers).where(eq(subscribers.unsubscribeToken, token));
     if (existing.length === 0) {
       return htmlPage("Not Found", "This unsubscribe link may be invalid or expired.");
+    }
+
+    // Cancel the Stripe subscription if one exists
+    const stripeSubId = existing[0].stripeSubscriptionId;
+    if (stripeSubId) {
+      try {
+        await stripe.subscriptions.cancel(stripeSubId);
+      } catch (stripeErr) {
+        // Log but don't block unsubscribe if Stripe cancel fails
+        // (subscription may already be cancelled)
+        console.error("Stripe subscription cancel error:", stripeErr);
+      }
     }
 
     await db

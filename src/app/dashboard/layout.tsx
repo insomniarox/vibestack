@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { LayoutGrid, PenTool, Users, ChevronDown } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
