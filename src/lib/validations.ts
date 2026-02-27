@@ -1,8 +1,11 @@
 import { z } from "zod";
 
+// 500KB content limit prevents DoS via oversized payloads
+const MAX_CONTENT_LENGTH = 500_000;
+
 export const createPostSchema = z.object({
   title: z.string().min(1, "Title is required").max(500),
-  content: z.string().min(1, "Content is required"),
+  content: z.string().min(1, "Content is required").max(MAX_CONTENT_LENGTH, "Content is too large"),
   vibe: z.string().max(50).optional().default("neutral"),
   status: z.enum(["draft", "published"]).optional().default("draft"),
   isPaid: z.boolean().optional().default(false),
@@ -12,7 +15,7 @@ export const createPostSchema = z.object({
 export const updatePostSchema = z.object({
   id: z.coerce.number().int().positive("Post ID must be a positive number"),
   title: z.string().min(1).max(500).optional(),
-  content: z.string().optional(),
+  content: z.string().max(MAX_CONTENT_LENGTH, "Content is too large").optional(),
   vibe: z.string().max(50).optional(),
   status: z.enum(["draft", "published"]).optional(),
   isPaid: z.boolean().optional(),

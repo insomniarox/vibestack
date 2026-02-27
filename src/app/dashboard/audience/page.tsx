@@ -1,12 +1,13 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { Users, MailOpen, MousePointerClick, UserMinus, Search, Download, ArrowLeft } from "lucide-react";
-import { db } from "../../../db";
-import { subscribers } from "../../../db/schema";
+import { Users, MailOpen, MousePointerClick, UserMinus, ArrowLeft } from "lucide-react";
+import { db } from "@/db";
+import { subscribers } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 import { getUserPlan, PLAN_LIMITS } from "@/lib/user-plans";
+import AudienceTable from "@/components/AudienceTable";
 
 type Subscriber = typeof subscribers.$inferSelect;
 
@@ -24,9 +25,17 @@ export default async function AudiencePage() {
     }
   }
 
-  const activeCount = userSubscribers.filter(s => s.status === 'active' || !s.status).length;
+  const activeCount = userSubscribers.filter(s => s.status === 'active').length;
   const unsubsCount = userSubscribers.filter(s => s.status === 'unsubscribed').length;
   const planMaxSubscribers = PLAN_LIMITS[plan].subscribers;
+
+  // Serialize for client component (dates must be strings)
+  const serializedSubscribers = userSubscribers.map(s => ({
+    id: s.id,
+    email: s.email,
+    status: s.status,
+    createdAt: s.createdAt?.toISOString() ?? "",
+  }));
 
   return (
     <div className="min-h-screen bg-background text-foreground p-6">
@@ -41,9 +50,6 @@ export default async function AudiencePage() {
             <p className="text-sm text-gray-400">Manage subscribers and track engagement</p>
           </div>
         </div>
-        <button className="flex items-center gap-2 glass border border-border px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/5 transition-colors">
-          <Download className="w-4 h-4" /> Export CSV
-        </button>
       </div>
 
       <main className="max-w-[1200px] mx-auto space-y-8">
@@ -88,53 +94,8 @@ export default async function AudiencePage() {
           ))}
         </div>
 
-        {/* Subscribers Table */}
-        <div className="glass border border-border rounded-2xl overflow-hidden flex flex-col">
-          <div className="p-4 border-b border-border flex flex-col sm:flex-row justify-between items-center gap-4 bg-surface/50">
-            <div className="relative w-full sm:w-80">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-              <input 
-                type="text" 
-                placeholder="Search emails..." 
-                className="w-full bg-black border border-border rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-primary/50 text-gray-200 placeholder:text-gray-600 transition-colors"
-              />
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-border bg-black/40 text-xs uppercase tracking-widest text-gray-500 font-semibold">
-                  <th className="p-4 font-medium">Subscriber</th>
-                  <th className="p-4 font-medium">Status</th>
-                  <th className="p-4 font-medium">Date Added</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/50 text-sm">
-                {userSubscribers.length > 0 ? userSubscribers.map((sub) => (
-                  <tr key={sub.id} className="hover:bg-white/[0.02] transition-colors group">
-                    <td className="p-4 font-medium text-gray-200">{sub.email}</td>
-                    <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        sub.status === 'active' || !sub.status ? 'bg-primary/10 text-primary border border-primary/20' :
-                        'bg-red-500/10 text-red-500 border border-red-500/20'
-                      }`}>
-                        {sub.status || 'Active'}
-                      </span>
-                    </td>
-                    <td className="p-4 text-gray-500 font-mono">{sub.createdAt?.toLocaleDateString()}</td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan={3} className="p-8 text-center text-gray-500">
-                      No subscribers yet. Time to grow your audience!
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        {/* Client component with search + export */}
+        <AudienceTable subscribers={serializedSubscribers} />
       </main>
     </div>
   );

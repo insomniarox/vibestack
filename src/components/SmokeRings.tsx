@@ -1,14 +1,26 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 export default function SmokeRings() {
+  const prefersReducedMotion = useReducedMotion();
+
   const morphingRadius = [
     "40% 60% 70% 30% / 40% 50% 60% 50%",
     "70% 30% 50% 50% / 30% 30% 70% 70%",
     "100% 60% 60% 100% / 100% 100% 60% 60%",
     "40% 60% 70% 30% / 40% 50% 60% 50%",
   ];
+
+  if (prefersReducedMotion) {
+    return (
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] z-0 pointer-events-none flex justify-center items-center mix-blend-screen opacity-40">
+        <div className="absolute w-[350px] h-[350px] rounded-full border-[4px] border-indigo-500 blur-[12px]" />
+        <div className="absolute w-[450px] h-[450px] rounded-full border-[4px] border-emerald-500 blur-[16px]" />
+        <div className="absolute w-[300px] h-[300px] rounded-full border-[4px] border-purple-500 blur-[14px]" />
+      </div>
+    );
+  }
 
   return (
     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] z-0 pointer-events-none flex justify-center items-center mix-blend-screen opacity-80">

@@ -88,7 +88,12 @@ async function sendPublishEmails(
     `
   }));
 
-  await resend.batch.send(emails);
+  // Resend batch API supports max 100 emails per call — chunk to avoid errors
+  const BATCH_SIZE = 100;
+  for (let i = 0; i < emails.length; i += BATCH_SIZE) {
+    const batch = emails.slice(i, i + BATCH_SIZE);
+    await resend.batch.send(batch);
+  }
 }
 
 export async function POST(req: Request) {
@@ -159,7 +164,10 @@ export async function POST(req: Request) {
     }
 
     if (status === 'published') {
-      await sendPublishEmails(user.id, handle, title, content, effectiveColorScheme);
+      // Fire-and-forget: don't let email failures block the publish response
+      sendPublishEmails(user.id, handle, title, content, effectiveColorScheme).catch((err) => {
+        console.error("Failed to send publish emails:", err);
+      });
     }
 
     return NextResponse.json(newPost[0]);
@@ -230,7 +238,10 @@ export async function PUT(req: Request) {
 
     if (isNowPublished && wasDraft) {
       const contentForEmail = content !== undefined ? content : (existingPost[0].content || "");
-      await sendPublishEmails(user.id, handle, title || existingPost[0].title, contentForEmail, finalColorScheme);
+      // Fire-and-forget: don't let email failures block the update response
+      sendPublishEmails(user.id, handle, title || existingPost[0].title, contentForEmail, finalColorScheme).catch((err) => {
+        console.error("Failed to send publish emails:", err);
+      });
     }
 
     return NextResponse.json(updatedPost[0]);

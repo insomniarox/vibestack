@@ -5,10 +5,21 @@ import { useRouter } from "next/navigation";
 import { Sparkles, Wand2, ArrowRight, Settings2, Image as ImageIcon, Loader2, Lock, Unlock, X, Palette, Save, Eye } from "lucide-react";
 import type { posts } from "@/db/schema";
 import { getAiDailyCallLimit } from "@/lib/plan-limits";
+import { ToastProvider, useToast } from "@/components/Toast";
+import { renderMarkdownToHtml } from "@/lib/markdown";
 
 type VibeEditorPost = typeof posts.$inferSelect;
 
-export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEditorPost | null; plan: "hobby" | "pro" }) {
+export default function VibeEditor(props: { initialPost?: VibeEditorPost | null; plan: "hobby" | "pro" }) {
+  return (
+    <ToastProvider>
+      <VibeEditorInner {...props} />
+    </ToastProvider>
+  );
+}
+
+function VibeEditorInner({ initialPost, plan }: { initialPost?: VibeEditorPost | null; plan: "hobby" | "pro" }) {
+  const { toast } = useToast();
   const router = useRouter();
   const isPro = plan === "pro";
   const [title, setTitle] = useState(initialPost?.title || "");
@@ -24,9 +35,14 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
   const contrast = contrastOptions[contrastIndex];
   const saturation = saturationOptions[saturationIndex];
   const [isPaid, setIsPaid] = useState(initialPost?.isPaid || false);
-  const [colorScheme, setColorScheme] = useState<{ background: string; text: string; primary: string } | null>(
-    isPro && initialPost?.colorScheme ? JSON.parse(initialPost.colorScheme) : null
-  );
+  const [colorScheme, setColorScheme] = useState<{ background: string; text: string; primary: string } | null>(() => {
+    if (!isPro || !initialPost?.colorScheme) return null;
+    try {
+      return JSON.parse(initialPost.colorScheme);
+    } catch {
+      return null;
+    }
+  });
   
   const [thinkingAction, setThinkingAction] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -77,12 +93,12 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
     const file = e.target.files[0];
 
     if (!ALLOWED_UPLOAD_TYPES.has(file.type)) {
-      alert("Unsupported file type. Use PNG, JPG, GIF, or WebP.");
+      toast("Unsupported file type. Use PNG, JPG, GIF, or WebP.", "error");
       return;
     }
 
     if (file.size > MAX_UPLOAD_BYTES) {
-      alert("File too large. Max 5MB.");
+      toast("File too large. Max 5MB.", "error");
       return;
     }
 
@@ -100,7 +116,7 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
       setIsDirty(true);
     } catch (err) {
       console.error(err);
-      alert("Image upload failed. Check console.");
+      toast("Image upload failed. Please try again.", "error");
     } finally {
       setIsUploading(false);
     }
@@ -130,7 +146,7 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
           const resetAt = data?.resetAt ? new Date(data.resetAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "";
           if (Number.isFinite(data?.calls)) setAiCallsUsed(data.calls);
           if (resetAt) setAiResetLabel(resetAt);
-          alert(`Daily AI limit reached. Resets at ${resetAt}.`);
+          toast(`Daily AI limit reached. Resets at ${resetAt}.`, "warning");
           return;
         }
         throw new Error('Failed to generate color scheme');
@@ -141,7 +157,7 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
       applyUsageFromHeaders(res);
     } catch (error) {
       console.error(error);
-      alert('Failed to generate color scheme');
+      toast("Failed to generate color scheme.", "error");
     } finally {
       setIsGeneratingColors(false);
       fetchAiUsage();
@@ -149,7 +165,10 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
   };
 
   const savePost = async (status: 'draft' | 'published') => {
-    if (!title || !content) return alert(`Title and content are required to ${status}!`);
+    if (!title || !content) {
+      toast(`Title and content are required to ${status}.`, "warning");
+      return;
+    }
     
     if (status === 'published') setIsPublishing(true);
     else setIsSavingDraft(true);
@@ -179,7 +198,7 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
         throw new Error(errText || `Failed to save ${status}`);
       }
       
-      alert(status === 'published' ? "✨ Successfully published to the VibeStack!" : "💾 Draft saved successfully!");
+      toast(status === 'published' ? "Successfully published!" : "Draft saved.", "success");
       setIsDirty(false);
       
       router.push('/dashboard');
@@ -187,7 +206,7 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
     } catch (error: unknown) {
       console.error(error);
       const message = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Action failed: ${message}`);
+      toast(`Action failed: ${message}`, "error");
     } finally {
       setIsPublishing(false);
       setIsSavingDraft(false);
@@ -197,6 +216,7 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
   const handleAiAction = async (endpoint: string, actionName: string) => {
     if (!content) return;
     setThinkingAction(actionName);
+    const originalContent = content;
     
     try {
       const res = await fetch(endpoint, {
@@ -211,7 +231,7 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
           const resetAt = data?.resetAt ? new Date(data.resetAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "";
           if (Number.isFinite(data?.calls)) setAiCallsUsed(data.calls);
           if (resetAt) setAiResetLabel(resetAt);
-          alert(`Daily AI limit reached. Resets at ${resetAt}.`);
+          toast(`Daily AI limit reached. Resets at ${resetAt}.`, "warning");
           return;
         }
         const errText = await res.text();
@@ -236,6 +256,8 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
       }
     } catch (error) {
       console.error("AI Action failed:", error);
+      // Restore original content if the stream failed before completing
+      setContent((current) => current.length === 0 ? originalContent : current);
     } finally {
       setThinkingAction(null);
       fetchAiUsage();
@@ -589,11 +611,10 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
               </h1>
               
               <div 
-                className="text-base leading-relaxed whitespace-pre-wrap font-sans transition-colors duration-500"
+                className="text-base leading-relaxed font-sans transition-colors duration-500 prose prose-invert max-w-none"
                 style={{ color: colorScheme?.text || '#a3a3a3' }}
-              >
-                {content || 'Your post content will appear here...'}
-              </div>
+                dangerouslySetInnerHTML={{ __html: content ? renderMarkdownToHtml(content) : '<p>Your post content will appear here...</p>' }}
+              />
               
               <hr className="border-white/10 my-10" />
               

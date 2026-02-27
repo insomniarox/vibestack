@@ -2,8 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { Users, Zap, Plus, FileText, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { db } from "../../db";
-import { posts, subscribers, users } from "../../db/schema";
+import { db } from "@/db";
+import { posts, subscribers, users } from "@/db/schema";
 import { eq, desc, count, and, ne } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 import DeletePostButton from "@/components/DeletePostButton";
@@ -125,7 +125,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             {latestPost ? (
               <>
                 <h4 className="text-xl font-bold tracking-tight mb-1">{latestPost.title}</h4>
-                <p className="text-sm text-gray-400 truncate">Published {latestPost.createdAt?.toLocaleDateString()} • Vibe: {latestPost.vibeTheme}</p>
+                <p className="text-sm text-gray-400 truncate">Published {(latestPost.publishedAt ?? latestPost.createdAt)?.toLocaleDateString()} • Vibe: {latestPost.vibeTheme}</p>
               </>
             ) : (
               <>
@@ -153,7 +153,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                   <div className="flex gap-2 items-center">
                     {post.status === 'published' ? (
                       <>
-                        <Link href={`/${handle || post.authorId}/${post.slug || post.id}`} className="px-4 py-2 bg-surface border border-border rounded-lg text-sm text-gray-300 hover:text-white transition-colors">View</Link>
+                        {handle && <Link href={`/${handle}/${post.slug}`} className="px-4 py-2 bg-surface border border-border rounded-lg text-sm text-gray-300 hover:text-white transition-colors">View</Link>}
                         <span className="px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg text-sm font-medium">Published</span>
                       </>
                     ) : (

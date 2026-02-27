@@ -19,7 +19,7 @@ export default function MobileSidebar({ children }: { children: React.ReactNode 
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "auto";
+      document.body.style.overflow = "";
     };
   }, [isOpen, mounted]);
 

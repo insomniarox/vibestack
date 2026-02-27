@@ -16,7 +16,10 @@ export function buildHandle(userId: string, username?: string | null, firstName?
 }
 
 export async function upsertUserRecord(params: { id: string; email: string; handle: string }) {
-  await db.insert(users).values(params).onConflictDoNothing();
+  await db.insert(users).values(params).onConflictDoUpdate({
+    target: users.id,
+    set: { email: params.email, handle: params.handle },
+  });
 }
 
 export async function getUserPlan(userId: string): Promise<UserPlan> {

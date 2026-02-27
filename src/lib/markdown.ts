@@ -23,7 +23,7 @@ const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
     img: ["src", "alt", "title", "width", "height"],
     a: ["href", "name", "target", "rel"],
   },
-  allowedSchemes: ["http", "https", "data"],
+  allowedSchemes: ["http", "https"],
   transformTags: {
     a: sanitizeHtml.simpleTransform("a", {
       rel: "noopener noreferrer",

@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { buildHandle, setUserPlan, upsertUserRecord } from "@/lib/user-plans";
+import { stripe } from "@/lib/stripe";
+import { db } from "@/db";
+import { users } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 async function handle(req: Request) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin || "http://localhost:3000";
@@ -20,6 +24,17 @@ async function handle(req: Request) {
     email: email,
     handle: handle,
   });
+
+  // Cancel the existing Stripe Pro subscription before downgrading
+  const existingUser = await db.select({ planSubscriptionId: users.planSubscriptionId }).from(users).where(eq(users.id, user.id));
+  const planSubId = existingUser[0]?.planSubscriptionId;
+  if (planSubId) {
+    try {
+      await stripe.subscriptions.cancel(planSubId);
+    } catch (err) {
+      console.error("Failed to cancel Stripe subscription on hobby downgrade:", err);
+    }
+  }
 
   await setUserPlan(user.id, "hobby", null);
 
