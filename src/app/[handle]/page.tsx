@@ -145,12 +145,12 @@ export default async function AuthorProfile({ params, searchParams }: { params: 
                 Subscribed
               </div>
               {unsubscribeToken && user?.id !== author.id && (
-                <Link
+                <a
                   href={`/api/unsubscribe?token=${unsubscribeToken}`}
                   className="inline-flex items-center justify-center px-6 py-3 rounded-full font-semibold bg-red-500 text-black hover:bg-red-400 transition-colors"
                 >
                   Unsubscribe
-                </Link>
+                </a>
               )}
             </div>
           )}

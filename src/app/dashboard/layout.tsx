@@ -90,13 +90,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
                     >
                       @{author.handle}
                     </Link>
-                    <Link
+                    <a
                       href={`/api/unsubscribe?token=${author.unsubscribeToken}`}
                       className="opacity-0 group-hover/item:opacity-100 text-xs text-red-400 hover:text-red-300 transition-opacity"
                       title="Unsubscribe"
                     >
                       Unsubscribe
-                    </Link>
+                    </a>
                   </div>
                 ))}
               </div>
