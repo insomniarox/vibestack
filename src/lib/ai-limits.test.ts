@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AI_TEXT_LIMITS } from "./ai-limits";
+import { AI_TEXT_LIMITS } from "./plan-limits";
 
 describe("AI limits", () => {
   it("provides higher limits for pro", () => {

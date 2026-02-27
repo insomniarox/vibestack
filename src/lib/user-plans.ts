@@ -1,13 +1,11 @@
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { PLAN_LIMITS } from "@/lib/plan-limits";
 
 export type UserPlan = "hobby" | "pro";
 
-export const PLAN_LIMITS: Record<UserPlan, { subscribers: number }> = {
-  hobby: { subscribers: 500 },
-  pro: { subscribers: 10000 },
-};
+export { PLAN_LIMITS };
 
 export function normalizePlan(plan?: string | null): UserPlan {
   return plan === "pro" ? "pro" : "hobby";

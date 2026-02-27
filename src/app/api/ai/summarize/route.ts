@@ -4,7 +4,7 @@ import { aiSummarizeSchema } from '@/lib/validations';
 import { currentUser } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import { getUserPlan } from '@/lib/user-plans';
-import { getAiTextLimit } from '@/lib/ai-limits';
+import { getAiTextLimit } from '@/lib/plan-limits';
 
 export async function POST(req: Request) {
   try {

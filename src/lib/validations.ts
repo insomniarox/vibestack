@@ -30,7 +30,12 @@ export const aiSummarizeSchema = z.object({
 
 export const aiColorsSchema = z.object({
   vibe: z.string().min(1, "Vibe is required").max(50),
+  title: z.string().max(500).optional(),
   content: z.string().optional(),
+  variationSeed: z.number().int().nonnegative().optional(),
+  tone: z.enum(["neutral", "warm", "cool"]).optional(),
+  contrast: z.enum(["low", "medium", "high"]).optional(),
+  saturation: z.enum(["muted", "balanced", "vivid"]).optional(),
 });
 
 export type CreatePostInput = z.infer<typeof createPostSchema>;

@@ -69,10 +69,10 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       </header>
 
       {/* Brutalist Bento Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 auto-rows-[160px]">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 auto-rows-[200px] md:auto-rows-[160px]">
         
         {/* Primary Action Card (Span 2x2) */}
-        <Link href="/dashboard/write" className="md:col-span-2 md:row-span-2 bg-primary text-black p-8 flex flex-col justify-between group hover:scale-[1.01] transition-transform cursor-pointer relative overflow-hidden block">
+        <Link href="/dashboard/write" className="md:col-span-2 md:row-span-2 bg-primary text-black p-6 md:p-8 flex flex-col justify-between group hover:scale-[1.01] transition-transform cursor-pointer relative overflow-hidden block">
           <div className="relative z-10">
             <h3 className="text-2xl font-bold tracking-tight mb-2">Write in 4D.</h3>
             <p className="text-black/70 max-w-sm">Create a new AI-augmented newsletter post. Let the Vibe Engine do the heavy lifting.</p>
