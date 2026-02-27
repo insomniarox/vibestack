@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { db } from "@/db";
 import { users, posts, subscribers } from "@/db/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, or, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { currentUser } from "@clerk/nextjs/server";
@@ -39,19 +39,23 @@ export default async function AuthorProfile({ params, searchParams }: { params: 
 
   // 3. Subscription Status
   const user = await currentUser();
-  const userEmail = user?.emailAddresses[0]?.emailAddress;
+  const userEmail = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses[0]?.emailAddress;
+  const normalizedEmail = userEmail?.trim().toLowerCase();
   
   let isSubscribed = false;
   let unsubscribeToken: string | null = null;
 
   if (user?.id === author.id) {
     isSubscribed = true;
-  } else if (userEmail) {
+  } else if (user?.id || normalizedEmail) {
     const subResult = await db.select().from(subscribers).where(
       and(
         eq(subscribers.authorId, author.id),
-        eq(subscribers.email, userEmail),
-        eq(subscribers.status, 'active')
+        eq(subscribers.status, 'active'),
+        or(
+          user?.id ? eq(subscribers.subscriberUserId, user.id) : sql`false`,
+          normalizedEmail ? sql`lower(${subscribers.email}) = ${normalizedEmail}` : sql`false`
+        )
       )
     );
     if (subResult.length > 0) {

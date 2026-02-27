@@ -206,6 +206,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "subscriber_user_id": {
+          "name": "subscriber_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "email": {
           "name": "email",
           "type": "varchar(255)",
@@ -240,7 +246,29 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "subscribers_author_user_idx": {
+          "name": "subscribers_author_user_idx",
+          "columns": [
+            {
+              "expression": "author_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "subscriber_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "subscribers_author_id_users_id_fk": {
           "name": "subscribers_author_id_users_id_fk",

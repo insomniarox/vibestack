@@ -46,7 +46,8 @@ async function createSubscriptionSession(authorId: string, req: Request) {
   }
 
   const user = await currentUser();
-  const customerEmail = user?.emailAddresses[0]?.emailAddress;
+  const customerEmail = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses[0]?.emailAddress;
+  const normalizedEmail = customerEmail?.trim().toLowerCase();
   const appUrl = getAppUrl(req);
   const author = await db.select({ handle: users.handle }).from(users).where(eq(users.id, authorId));
   const authorHandle = author[0]?.handle;
@@ -55,7 +56,7 @@ async function createSubscriptionSession(authorId: string, req: Request) {
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',
     payment_method_types: ['card'],
-    customer_email: customerEmail || undefined,
+    customer_email: normalizedEmail || undefined,
     line_items: [
       {
         price_data: {
@@ -76,6 +77,7 @@ async function createSubscriptionSession(authorId: string, req: Request) {
       planType: 'author',
       authorId: authorId,
       authorHandle: authorHandle ?? null,
+      subscriberUserId: user?.id ?? null,
     },
   });
 

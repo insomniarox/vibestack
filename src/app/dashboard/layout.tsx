@@ -7,16 +7,17 @@ import { dark } from "@clerk/themes";
 import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { subscribers, users } from "@/db/schema";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, or, sql } from "drizzle-orm";
 import { getUserPlan } from "@/lib/user-plans";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await currentUser();
   const userId = user?.id;
-  const userEmail = user?.emailAddresses[0]?.emailAddress;
+  const userEmail = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses[0]?.emailAddress;
+  const normalizedEmail = userEmail?.trim().toLowerCase();
   const plan = userId ? await getUserPlan(userId) : "hobby";
 
-  const subscribedAuthors = userEmail
+  const subscribedAuthors = userId || normalizedEmail
     ? await db
       .select({
         authorId: subscribers.authorId,
@@ -25,7 +26,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
       })
       .from(subscribers)
       .innerJoin(users, eq(subscribers.authorId, users.id))
-      .where(and(eq(subscribers.email, userEmail), eq(subscribers.status, "active")))
+      .where(and(
+        eq(subscribers.status, "active"),
+        or(
+          userId ? eq(subscribers.subscriberUserId, userId) : sql`false`,
+          normalizedEmail ? sql`lower(${subscribers.email}) = ${normalizedEmail}` : sql`false`
+        )
+      ))
       .orderBy(asc(users.handle))
     : [];
 

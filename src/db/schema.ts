@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, varchar, boolean, uuid, integer, date, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, varchar, boolean, uuid, integer, date, uniqueIndex, index } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
@@ -27,12 +27,15 @@ export const posts = pgTable("posts", {
 export const subscribers = pgTable("subscribers", {
   id: serial("id").primaryKey(),
   authorId: text("author_id").references(() => users.id).notNull(),
+  subscriberUserId: text("subscriber_user_id"),
   email: varchar("email", { length: 255 }).notNull(),
   status: varchar("status", { length: 50 }).default('pending'),
   stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
   unsubscribeToken: uuid("unsubscribe_token").defaultRandom().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  authorUserIdx: index("subscribers_author_user_idx").on(table.authorId, table.subscriberUserId),
+}));
 
 export const aiDailyUsage = pgTable("ai_daily_usage", {
   id: serial("id").primaryKey(),

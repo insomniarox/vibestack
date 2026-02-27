@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { db } from "@/db";
 import { users, posts, subscribers } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { currentUser } from "@clerk/nextjs/server";
@@ -25,20 +25,24 @@ export default async function PostPage({ params }: { params: Promise<{ handle: s
 
   // 3. Paywall Logic
   const user = await currentUser();
-  const userEmail = user?.emailAddresses[0]?.emailAddress;
+  const userEmail = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses[0]?.emailAddress;
+  const normalizedEmail = userEmail?.trim().toLowerCase();
   
   let isSubscribed = false;
 
   // The author can always read their own posts
   if (user?.id === author.id) {
     isSubscribed = true;
-  } else if (userEmail) {
+  } else if (user?.id || normalizedEmail) {
     // Check if current user has an active subscription to this author
     const subResult = await db.select().from(subscribers).where(
       and(
         eq(subscribers.authorId, author.id),
-        eq(subscribers.email, userEmail),
-        eq(subscribers.status, 'active')
+        eq(subscribers.status, 'active'),
+        or(
+          user?.id ? eq(subscribers.subscriberUserId, user.id) : sql`false`,
+          normalizedEmail ? sql`lower(${subscribers.email}) = ${normalizedEmail}` : sql`false`
+        )
       )
     );
     if (subResult.length > 0) {

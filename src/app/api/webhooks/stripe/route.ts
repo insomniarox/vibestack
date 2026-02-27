@@ -1,7 +1,7 @@
 import { stripe } from '@/lib/stripe';
 import { db } from '@/db';
 import { subscribers, users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and, or, sql } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { setUserPlan } from '@/lib/user-plans';
 import type Stripe from 'stripe';
@@ -42,16 +42,38 @@ export async function POST(req: Request) {
       }
     } else {
       const authorId = session.metadata?.authorId;
-      const email = session.customer_details?.email;
+      const email = session.customer_email || session.customer_details?.email;
+      const normalizedEmail = email?.trim().toLowerCase();
+      const subscriberUserId = session.metadata?.subscriberUserId || session.metadata?.userId || null;
 
-      if (authorId && email && subscriptionId) {
-        await db.insert(subscribers).values({
-          authorId: authorId,
-          email: email,
-          status: 'active',
-          stripeSubscriptionId: subscriptionId,
-        });
-        console.log(`✅ Successfully subscribed ${email} to author ${authorId}`);
+      if (authorId && normalizedEmail && subscriptionId) {
+        const matchClauses = [sql`lower(${subscribers.email}) = ${normalizedEmail}`];
+        if (subscriberUserId) {
+          matchClauses.push(eq(subscribers.subscriberUserId, subscriberUserId));
+        }
+
+        const existing = await db.select().from(subscribers).where(
+          and(eq(subscribers.authorId, authorId), or(...matchClauses))
+        );
+
+        if (existing.length > 0) {
+          await db.update(subscribers).set({
+            status: 'active',
+            stripeSubscriptionId: subscriptionId,
+            email: normalizedEmail,
+            subscriberUserId: subscriberUserId ?? existing[0]?.subscriberUserId ?? null,
+          }).where(eq(subscribers.id, existing[0].id));
+        } else {
+          await db.insert(subscribers).values({
+            authorId: authorId,
+            subscriberUserId: subscriberUserId ?? null,
+            email: normalizedEmail,
+            status: 'active',
+            stripeSubscriptionId: subscriptionId,
+          });
+        }
+
+        console.log(`✅ Successfully subscribed ${normalizedEmail} to author ${authorId}`);
       }
     }
   }

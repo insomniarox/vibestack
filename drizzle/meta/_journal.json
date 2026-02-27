@@ -15,6 +15,13 @@
       "when": 1772217506451,
       "tag": "0001_add_ai_daily_usage",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772470000000,
+      "tag": "0002_add_subscriber_user_id",
+      "breakpoints": true
     }
   ]
 }
