@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, Wand2, ArrowRight, Settings2, Image as ImageIcon, Loader2, Lock, Unlock, X, Palette } from "lucide-react";
+import { Sparkles, Wand2, ArrowRight, Settings2, Image as ImageIcon, Loader2, Lock, Unlock, X, Palette, Save, Eye } from "lucide-react";
 import type { posts } from "@/db/schema";
 import { getAiDailyCallLimit } from "@/lib/plan-limits";
 
@@ -244,10 +244,10 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
 
   return (
     <>
-      <div className="flex flex-col lg:flex-row gap-6 w-full h-auto">
+      <div className="flex flex-col xl:flex-row gap-6 w-full h-auto">
         
         {/* Main Editor Area */}
-        <div className="flex-1 glass border border-border rounded-2xl flex flex-col relative overflow-hidden min-h-[60vh]">
+        <div className="flex-1 glass border border-border rounded-2xl flex flex-col relative overflow-hidden min-h-[500px] lg:min-h-[calc(100vh-140px)]">
           {/* Editor Top Bar */}
           <div className="flex flex-col md:flex-row md:items-center justify-between p-4 border-b border-border bg-surface/50 backdrop-blur-md z-10 gap-4">
             <input 
@@ -258,43 +258,54 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
               className="bg-transparent text-xl md:text-2xl font-bold focus:outline-none w-full placeholder:text-gray-600 font-sans"
             />
           </div>
-          <div className="flex flex-wrap items-center gap-2 md:gap-4 p-2 md:p-4 border-b border-border bg-surface/30 backdrop-blur-md z-10 shrink-0">
-            <label className="cursor-pointer text-xs md:text-sm font-medium text-gray-400 hover:text-white transition-colors flex items-center gap-2 p-2 rounded-lg hover:bg-white/5">
-              {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
-              <span className="hidden sm:inline">{isUploading ? 'Uploading...' : 'Add Image'}</span>
+          <div className="flex flex-nowrap items-center gap-2 md:gap-4 p-2 md:p-4 border-b border-border bg-surface/30 backdrop-blur-md z-10 shrink-0 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] w-full">
+            <label className="cursor-pointer text-gray-400 hover:text-white transition-colors flex items-center justify-center p-2 rounded-lg hover:bg-white/5 shrink-0" title="Add Image">
+              {isUploading ? <Loader2 className="w-5 h-5 animate-spin xl:w-4 xl:h-4" /> : <ImageIcon className="w-5 h-5 xl:w-4 xl:h-4" />}
+              <span className="hidden xl:inline ml-2 text-sm font-medium">{isUploading ? 'Uploading...' : 'Add Image'}</span>
               <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={isUploading} />
             </label>
-            <div className="w-px h-4 bg-border mx-1" />
+            
+            <div className="w-px h-5 bg-border shrink-0" />
+            
             <button 
               onClick={() => savePost('draft')}
               disabled={isSavingDraft || isPublishing}
-              className="text-xs md:text-sm font-medium text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5 disabled:opacity-50"
+              title="Save Draft"
+              className="text-gray-400 hover:text-white transition-colors flex items-center justify-center p-2 rounded-lg hover:bg-white/5 disabled:opacity-50 shrink-0"
             >
-              {isSavingDraft ? 'Saving...' : 'Save Draft'}
+              {isSavingDraft ? <Loader2 className="w-5 h-5 animate-spin xl:w-4 xl:h-4" /> : <Save className="w-5 h-5 xl:w-4 xl:h-4" />}
+              <span className="hidden xl:inline ml-2 text-sm font-medium">{isSavingDraft ? 'Saving...' : 'Save Draft'}</span>
             </button>
+
+            <div className="w-px h-5 bg-border shrink-0" />
+            
             <button 
               onClick={() => setShowPreview(true)}
-              className="text-xs md:text-sm font-medium text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5"
+              title="Preview"
+              className="text-gray-400 hover:text-white transition-colors flex items-center justify-center p-2 rounded-lg hover:bg-white/5 shrink-0"
             >
-              Preview
+              <Eye className="w-5 h-5 xl:w-4 xl:h-4" />
+              <span className="hidden xl:inline ml-2 text-sm font-medium">Preview</span>
             </button>
-            <div className="flex-1" />
+            
+            <div className="flex-1 min-w-[10px]" />
+            
             <button 
               onClick={() => savePost('published')}
               disabled={isPublishing || isSavingDraft}
-              className="bg-primary text-black px-4 md:px-6 py-2 rounded-full text-xs md:text-sm font-semibold hover:bg-primary/90 transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(212,255,0,0.2)] disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+              className="bg-primary text-black px-4 md:px-6 py-2 rounded-full text-xs md:text-sm font-semibold hover:bg-primary/90 transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(212,255,0,0.2)] disabled:opacity-50 disabled:cursor-not-allowed ml-auto shrink-0 whitespace-nowrap"
             >
-              {isPublishing ? 'Publishing...' : (initialPost?.status === 'published' ? 'Update' : 'Publish')} <ArrowRight className="w-4 h-4" />
+              {isPublishing ? 'Publishing...' : (initialPost?.status === 'published' ? 'Update' : 'Publish')} <ArrowRight className="w-4 h-4 shrink-0" />
             </button>
           </div>
           
           {/* Editor Canvas */}
-          <div className="flex-1 p-4 md:p-8 overflow-hidden relative">
+          <div className="flex flex-col flex-1 p-4 md:p-8 relative min-h-[400px]">
             <textarea 
               placeholder="Use Markdown for formatting"
               value={content}
               onChange={(e) => { setContent(e.target.value); setIsDirty(true); }}
-              className="w-full h-full overflow-y-auto bg-transparent text-gray-300 text-base md:text-lg leading-relaxed focus:outline-none resize-none font-serif placeholder:font-sans placeholder:text-gray-700 relative z-10"
+              className="flex-1 w-full resize-none overflow-y-auto bg-transparent text-gray-300 text-base md:text-lg leading-relaxed focus:outline-none font-serif placeholder:font-sans placeholder:text-gray-700 relative z-10"
             />
             
             {/* Subtle Horizon Glow inside the editor */}
@@ -303,7 +314,7 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
         </div>
 
         {/* AI Vibe Sidebar */}
-        <div className="w-full lg:w-80 flex flex-col gap-6 shrink-0">
+        <div className="w-full xl:w-80 flex flex-col gap-6 shrink-0">
           
           {/* Monetization / Paywall */}
           <div className="glass border border-border rounded-2xl p-4 md:p-6 flex flex-col shrink-0">
