@@ -28,6 +28,9 @@ export default async function AuthorProfile({ params, searchParams }: { params: 
   const userEmail = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses[0]?.emailAddress;
   const normalizedEmail = userEmail?.trim().toLowerCase();
 
+  // Post-checkout sync: if the user just completed Stripe checkout, ensure the
+  // subscription row exists immediately (the webhook may be delayed).
+  // Uses ON CONFLICT so this is idempotent — safe even if the webhook already ran.
   if (sessionId && user?.id) {
     try {
       const session = await stripe.checkout.sessions.retrieve(sessionId);
@@ -35,13 +38,9 @@ export default async function AuthorProfile({ params, searchParams }: { params: 
         ? session.subscription
         : session.subscription?.id;
       const sessionAuthorId = session.metadata?.authorId;
-      const subscriberUserId = session.metadata?.subscriberUserId || null;
+      const subscriberUserId = session.metadata?.subscriberUserId || user.id;
       const email = session.customer_email || session.customer_details?.email;
       const normalizedSessionEmail = email?.trim().toLowerCase();
-
-      // Validate the session belongs to this author and is paid.
-      // Use the current user ID as the subscriber if metadata is missing (fallback).
-      const effectiveSubscriberUserId = subscriberUserId || user.id;
 
       if (
         session.payment_status === "paid" &&
@@ -49,31 +48,22 @@ export default async function AuthorProfile({ params, searchParams }: { params: 
         subscriptionId &&
         normalizedSessionEmail
       ) {
-        const matchClauses = [sql`lower(${subscribers.email}) = ${normalizedSessionEmail}`];
-        if (effectiveSubscriberUserId) {
-          matchClauses.push(eq(subscribers.subscriberUserId, effectiveSubscriberUserId));
-        }
-
-        const existing = await db.select().from(subscribers).where(
-          and(eq(subscribers.authorId, author.id), or(...matchClauses))
-        );
-
-        if (existing.length > 0) {
-          await db.update(subscribers).set({
+        // Atomic upsert — uses UNIQUE(author_id, email) constraint.
+        // Cannot create duplicates even if webhook fires simultaneously.
+        await db.insert(subscribers).values({
+          authorId: author.id,
+          subscriberUserId,
+          email: normalizedSessionEmail,
+          status: "active",
+          stripeSubscriptionId: subscriptionId,
+        }).onConflictDoUpdate({
+          target: [subscribers.authorId, subscribers.email],
+          set: {
             status: "active",
             stripeSubscriptionId: subscriptionId,
-            email: normalizedSessionEmail,
-            subscriberUserId: effectiveSubscriberUserId ?? existing[0]?.subscriberUserId ?? null,
-          }).where(eq(subscribers.id, existing[0].id));
-        } else {
-          await db.insert(subscribers).values({
-            authorId: author.id,
-            subscriberUserId: effectiveSubscriberUserId ?? null,
-            email: normalizedSessionEmail,
-            status: "active",
-            stripeSubscriptionId: subscriptionId,
-          });
-        }
+            subscriberUserId: sql`COALESCE(${subscriberUserId}, ${subscribers.subscriberUserId})`,
+          },
+        });
       }
     } catch (error) {
       console.error("Stripe checkout sync error:", error);

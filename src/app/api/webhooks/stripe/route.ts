@@ -1,42 +1,36 @@
 import { stripe } from '@/lib/stripe';
 import { db } from '@/db';
 import { subscribers, users } from '@/db/schema';
-import { eq, and, or, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { setUserPlan } from '@/lib/user-plans';
 import type Stripe from 'stripe';
 
+/**
+ * Atomic upsert using the UNIQUE(author_id, email) constraint.
+ * This is the SINGLE source of truth for subscription creation/update.
+ * No SELECT-then-INSERT race condition possible.
+ */
 async function upsertAuthorSubscription(
   authorId: string,
   normalizedEmail: string,
   subscriptionId: string,
   subscriberUserId: string | null
 ) {
-  const matchClauses = [sql`lower(${subscribers.email}) = ${normalizedEmail}`];
-  if (subscriberUserId) {
-    matchClauses.push(eq(subscribers.subscriberUserId, subscriberUserId));
-  }
-
-  const existing = await db.select().from(subscribers).where(
-    and(eq(subscribers.authorId, authorId), or(...matchClauses))
-  );
-
-  if (existing.length > 0) {
-    await db.update(subscribers).set({
+  await db.insert(subscribers).values({
+    authorId,
+    email: normalizedEmail,
+    subscriberUserId: subscriberUserId ?? null,
+    status: 'active',
+    stripeSubscriptionId: subscriptionId,
+  }).onConflictDoUpdate({
+    target: [subscribers.authorId, subscribers.email],
+    set: {
       status: 'active',
       stripeSubscriptionId: subscriptionId,
-      email: normalizedEmail,
-      subscriberUserId: subscriberUserId ?? existing[0]?.subscriberUserId ?? null,
-    }).where(eq(subscribers.id, existing[0].id));
-  } else {
-    await db.insert(subscribers).values({
-      authorId: authorId,
-      subscriberUserId: subscriberUserId ?? null,
-      email: normalizedEmail,
-      status: 'active',
-      stripeSubscriptionId: subscriptionId,
-    });
-  }
+      subscriberUserId: subscriberUserId ?? sql`COALESCE(${subscribers.subscriberUserId}, NULL)`,
+    },
+  });
 }
 
 export async function POST(req: Request) {
