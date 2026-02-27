@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, varchar, boolean, uuid } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, varchar, boolean, uuid, integer, date, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: text("id").primaryKey(),
@@ -33,3 +33,13 @@ export const subscribers = pgTable("subscribers", {
   unsubscribeToken: uuid("unsubscribe_token").defaultRandom().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const aiDailyUsage = pgTable("ai_daily_usage", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").references(() => users.id).notNull(),
+  usageDate: date("usage_date").notNull(),
+  calls: integer("calls").default(0).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  userDateUnique: uniqueIndex("ai_daily_usage_user_date_idx").on(table.userId, table.usageDate),
+}));

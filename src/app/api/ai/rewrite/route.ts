@@ -5,6 +5,7 @@ import { currentUser } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import { getUserPlan } from '@/lib/user-plans';
 import { getAiTextLimit } from '@/lib/plan-limits';
+import { consumeAiCall } from '@/lib/ai-usage';
 
 export async function POST(req: Request) {
   try {
@@ -28,6 +29,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: { text: [`Text must be ${textLimit} characters or less.`] } }, { status: 400 });
     }
 
+    const usage = await consumeAiCall(user.id, plan);
+    if (!usage.allowed) {
+      return NextResponse.json(
+        { error: "Daily AI limit reached", calls: usage.calls, limit: usage.limit, resetAt: usage.resetAt },
+        { status: 429 }
+      );
+    }
+
     const prompt = `You are an elite copywriter. Rewrite the following text to perfectly match a "${vibe || 'neutral'}" tone. 
     Keep the core message intact, but aggressively adapt the vocabulary, pacing, and aesthetic to fit the mood.
     Return ONLY the rewritten text, no conversational filler.
@@ -40,7 +49,13 @@ export async function POST(req: Request) {
       prompt,
     });
 
-    return result.toTextStreamResponse();
+    return result.toTextStreamResponse({
+      headers: {
+        "X-AI-Usage-Calls": String(usage.calls),
+        "X-AI-Usage-Limit": String(usage.limit),
+        "X-AI-Usage-Reset": usage.resetAt,
+      },
+    });
   } catch (error) {
     console.error("AI Rewrite Error:", error);
     return new NextResponse('Failed to rewrite text', { status: 500 });

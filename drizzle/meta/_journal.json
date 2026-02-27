@@ -8,6 +8,13 @@
       "when": 1771885417294,
       "tag": "0000_fluffy_butterfly",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1772217506451,
+      "tag": "0001_add_ai_daily_usage",
+      "breakpoints": true
     }
   ]
 }

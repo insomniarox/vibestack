@@ -42,55 +42,34 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
   const ALLOWED_UPLOAD_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
   const dailyCallLimit = getAiDailyCallLimit(plan);
   const aiUsagePercent = Math.min(100, Math.round((aiCallsUsed / dailyCallLimit) * 100));
-  const AI_USAGE_STORAGE_KEY = "vibestack.ai.dailyUsage";
 
-  const getLocalDateKey = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+  const resetLabel = aiResetLabel || "--";
+
+  const applyUsageFromHeaders = (res: Response) => {
+    const calls = Number(res.headers.get("X-AI-Usage-Calls"));
+    const resetAt = res.headers.get("X-AI-Usage-Reset");
+    if (Number.isFinite(calls)) setAiCallsUsed(calls);
+    if (resetAt) {
+      setAiResetLabel(new Date(resetAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }));
+    }
   };
 
-  const getNextResetLabel = () => {
-    const now = new Date();
-    const resetAt = new Date(now);
-    resetAt.setDate(now.getDate() + 1);
-    resetAt.setHours(0, 0, 0, 0);
-    return resetAt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-  };
-
-  const resetLabel = aiResetLabel || getNextResetLabel();
-
-  const loadAiUsage = () => {
-    if (typeof window === "undefined") return { calls: 0, label: "" };
-    const todayKey = getLocalDateKey();
+  const fetchAiUsage = async () => {
     try {
-      const raw = window.localStorage.getItem(AI_USAGE_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as { date: string; calls: number };
-        if (parsed.date === todayKey && Number.isFinite(parsed.calls)) {
-          return { calls: parsed.calls, label: getNextResetLabel() };
-        }
+      const res = await fetch("/api/ai/usage");
+      if (!res.ok) return;
+      const data = await res.json();
+      setAiCallsUsed(Number.isFinite(data.calls) ? data.calls : 0);
+      if (data.resetAt) {
+        setAiResetLabel(new Date(data.resetAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }));
       }
     } catch {
-      // ignore storage parse errors
+      // ignore usage fetch errors
     }
-    const next = { date: todayKey, calls: 0 };
-    window.localStorage.setItem(AI_USAGE_STORAGE_KEY, JSON.stringify(next));
-    return { calls: 0, label: getNextResetLabel() };
-  };
-
-  const persistAiUsage = (calls: number) => {
-    if (typeof window === "undefined") return;
-    const payload = { date: getLocalDateKey(), calls };
-    window.localStorage.setItem(AI_USAGE_STORAGE_KEY, JSON.stringify(payload));
   };
 
   useEffect(() => {
-    const data = loadAiUsage();
-    setAiCallsUsed(data.calls);
-    setAiResetLabel(data.label);
+    fetchAiUsage();
   }, []);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,13 +108,6 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
 
   const generateColorScheme = async () => {
     if (!isPro) return;
-    const latestUsage = loadAiUsage();
-    if (latestUsage.calls >= dailyCallLimit) {
-      setAiCallsUsed(latestUsage.calls);
-      setAiResetLabel(latestUsage.label);
-      alert(`Daily AI limit reached. Resets at ${latestUsage.label}.`);
-      return;
-    }
     setIsGeneratingColors(true);
     try {
       const variationSeed = Math.floor(Math.random() * 1_000_000);
@@ -152,18 +124,27 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
           saturation,
         })
       });
-      if (!res.ok) throw new Error('Failed to generate color scheme');
+      if (!res.ok) {
+        if (res.status === 429) {
+          const data = await res.json().catch(() => null);
+          const resetAt = data?.resetAt ? new Date(data.resetAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "";
+          if (Number.isFinite(data?.calls)) setAiCallsUsed(data.calls);
+          if (resetAt) setAiResetLabel(resetAt);
+          alert(`Daily AI limit reached. Resets at ${resetAt}.`);
+          return;
+        }
+        throw new Error('Failed to generate color scheme');
+      }
       const data = await res.json();
       setColorScheme(data);
       setIsDirty(true);
-      const nextCalls = latestUsage.calls + 1;
-      setAiCallsUsed(nextCalls);
-      persistAiUsage(nextCalls);
+      applyUsageFromHeaders(res);
     } catch (error) {
       console.error(error);
       alert('Failed to generate color scheme');
     } finally {
       setIsGeneratingColors(false);
+      fetchAiUsage();
     }
   };
 
@@ -215,13 +196,6 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
 
   const handleAiAction = async (endpoint: string, actionName: string) => {
     if (!content) return;
-    const latestUsage = loadAiUsage();
-    if (latestUsage.calls >= dailyCallLimit) {
-      setAiCallsUsed(latestUsage.calls);
-      setAiResetLabel(latestUsage.label);
-      alert(`Daily AI limit reached. Resets at ${latestUsage.label}.`);
-      return;
-    }
     setThinkingAction(actionName);
     
     try {
@@ -232,14 +206,20 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
       });
 
       if (!res.ok) {
+        if (res.status === 429) {
+          const data = await res.json().catch(() => null);
+          const resetAt = data?.resetAt ? new Date(data.resetAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "";
+          if (Number.isFinite(data?.calls)) setAiCallsUsed(data.calls);
+          if (resetAt) setAiResetLabel(resetAt);
+          alert(`Daily AI limit reached. Resets at ${resetAt}.`);
+          return;
+        }
         const errText = await res.text();
         throw new Error(`API Error: ${res.status} - ${errText}`);
       }
       if (!res.body) throw new Error('No response body');
 
-      const nextCalls = latestUsage.calls + 1;
-      setAiCallsUsed(nextCalls);
-      persistAiUsage(nextCalls);
+      applyUsageFromHeaders(res);
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -258,6 +238,7 @@ export default function VibeEditor({ initialPost, plan }: { initialPost?: VibeEd
       console.error("AI Action failed:", error);
     } finally {
       setThinkingAction(null);
+      fetchAiUsage();
     }
   };
 

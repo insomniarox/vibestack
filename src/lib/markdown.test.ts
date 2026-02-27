@@ -10,7 +10,7 @@ describe("markdown utilities", () => {
 
   it("returns teaser paragraphs", () => {
     const teaser = getMarkdownTeaser("One\n\nTwo\n\nThree", 2);
-    expect(teaser).toBe("One\n\nTwo");
+    expect(teaser).toBe("<p>One</p>\n<p>Two</p>\n");
   });
 
   it("converts markdown to plain text", () => {

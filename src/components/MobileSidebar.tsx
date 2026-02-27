@@ -6,24 +6,22 @@ import { Menu, X } from "lucide-react";
 
 export default function MobileSidebar({ children }: { children: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [mounted] = useState(() => typeof window !== "undefined");
 
   useEffect(() => {
-    setMounted(true);
+    if (!mounted || !isOpen) return;
     // Add escape key listener to close sidebar
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") setIsOpen(false);
     };
-    if (isOpen) {
-      document.addEventListener("keydown", handleEscape);
-      // Prevent scrolling on body when modal is open
-      document.body.style.overflow = "hidden";
-    }
+    document.addEventListener("keydown", handleEscape);
+    // Prevent scrolling on body when modal is open
+    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", handleEscape);
       document.body.style.overflow = "auto";
     };
-  }, [isOpen]);
+  }, [isOpen, mounted]);
 
   return (
     <>
