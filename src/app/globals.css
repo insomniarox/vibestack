@@ -17,6 +17,41 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.article-body {
+  font-family: var(--font-newsreader), "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+}
+
+
+.prose h1 {
+  font-size: clamp(1.5rem, 1.8vw + 0.8rem, 2.1rem);
+  line-height: 1.1;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.prose h2 {
+  font-size: clamp(1.3rem, 1.4vw + 0.75rem, 1.8rem);
+  line-height: 1.2;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+}
+
+.prose h3 {
+  font-size: clamp(1.2rem, 1.2vw + 0.75rem, 1.6rem);
+  line-height: 1.25;
+  margin-top: 1.5rem;
+  margin-bottom: 0.6rem;
+  font-weight: 600;
+}
+
+.prose h1:first-child,
+.prose h2:first-child,
+.prose h3:first-child {
+  margin-top: 0;
+}
+
 /* Glassmorphism utility */
 .glass {
   background: rgba(255, 255, 255, 0.03);

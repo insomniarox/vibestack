@@ -106,7 +106,7 @@ export default async function PostPage({ params }: { params: Promise<{ handle: s
         </header>
 
         {/* The Post Content using Instrument Serif for that premium feel */}
-        <article className="prose prose-invert prose-lg md:prose-xl mx-auto font-serif tracking-wide leading-relaxed text-gray-300 relative" style={{ fontFamily: 'var(--font-instrument-serif), serif' }}>
+        <article className="article-body prose prose-invert prose-lg md:prose-xl mx-auto tracking-wide leading-relaxed text-gray-300 relative">
           <div dangerouslySetInnerHTML={{ __html: renderedHtml }} />
 
           {showPaywall && (
