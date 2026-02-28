@@ -84,7 +84,7 @@ export default async function PostPage({ params }: { params: Promise<{ handle: s
               href="/dashboard"
               className="bg-primary text-black px-4 md:px-5 py-2 rounded-full text-sm font-medium hover:bg-primary/90 transition-colors"
             >
-              <span className="hidden md:inline">Go to </span>Dashboard
+              Dashboard
             </Link>
           )}
           {!isSubscribed && (
