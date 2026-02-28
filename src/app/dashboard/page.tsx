@@ -155,10 +155,10 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           {allPosts.length > 0 ? (
             <div className="divide-y divide-border/50">
               {allPosts.map((post) => (
-                <div key={post.id} className="p-6 hover:bg-white/[0.02] transition-colors flex justify-between items-center">
-                  <div>
-                    <h3 className="text-lg font-bold mb-1 text-gray-200">{post.title}</h3>
-                    <div className="flex items-center gap-2 mt-1">
+                <div key={post.id} className="p-6 hover:bg-white/[0.02] transition-colors flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-bold mb-1 text-gray-200 break-words">{post.title}</h3>
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
                       <span className="text-sm text-gray-400">{post.createdAt?.toLocaleDateString()}</span>
                       <span className="px-2 py-0.5 rounded bg-white/5 font-mono text-xs capitalize border border-white/10 text-gray-300">
                         {post.vibeTheme}
@@ -170,7 +170,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-2 items-center">
+                  <div className="flex flex-wrap gap-2 items-center shrink-0">
                     {post.status === 'published' ? (
                       <>
                         {handle && <Link href={`/${handle}/${post.slug}`} className="px-4 py-2 bg-surface border border-border rounded-lg text-sm text-gray-300 hover:text-white transition-colors">View</Link>}
