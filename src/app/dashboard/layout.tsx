@@ -62,7 +62,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <PenTool className="w-4 h-4" /> New Post
           </Link>
           <Link href="/dashboard/audience" className="flex items-center gap-3 px-4 py-3 border border-transparent text-sm font-medium text-gray-400 hover:text-white hover:border-border transition-colors">
-            <Users className="w-4 h-4" /> Subscribers
+            <Users className="w-4 h-4" /> Plan & Audience
           </Link>
         </nav>
         <details className="mt-8 border border-border rounded-xl overflow-hidden group bg-surface/50 backdrop-blur-md">

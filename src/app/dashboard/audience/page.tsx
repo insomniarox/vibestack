@@ -1,5 +1,7 @@
 export const dynamic = "force-dynamic";
 
+import type { Metadata } from "next";
+
 import Link from "next/link";
 import { Users, MailOpen, MousePointerClick, UserMinus, ArrowLeft } from "lucide-react";
 import { db } from "@/db";
@@ -8,6 +10,10 @@ import { eq, desc } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 import { getUserPlan, PLAN_LIMITS } from "@/lib/user-plans";
 import AudienceTable from "@/components/AudienceTable";
+
+export const metadata: Metadata = {
+  title: "Plan & Audience | VibeStack",
+};
 
 type Subscriber = typeof subscribers.$inferSelect;
 
@@ -46,8 +52,8 @@ export default async function AudiencePage() {
             <ArrowLeft className="w-5 h-5 text-gray-400" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Audience</h1>
-            <p className="text-sm text-gray-400">Manage subscribers and track engagement</p>
+            <h1 className="text-2xl font-bold tracking-tight">Plan & Audience</h1>
+            <p className="text-sm text-gray-400">Manage plan, subscribers, and engagement</p>
           </div>
         </div>
       </div>
@@ -69,6 +75,16 @@ export default async function AudiencePage() {
                 className="bg-primary text-black px-5 py-2 rounded-full text-sm font-semibold hover:bg-primary/90 transition-colors"
               >
                 Upgrade to Pro
+              </button>
+            </form>
+          )}
+          {plan === "pro" && (
+            <form action="/api/plans/hobby" method="POST">
+              <button
+                type="submit"
+                className="glass border border-border text-gray-300 px-5 py-2 rounded-full text-sm font-semibold hover:bg-white/5 hover:text-white transition-colors"
+              >
+                Downgrade
               </button>
             </form>
           )}
