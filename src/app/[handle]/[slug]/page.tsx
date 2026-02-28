@@ -82,13 +82,13 @@ export default async function PostPage({ params }: { params: Promise<{ handle: s
           {user?.id && (
             <Link
               href="/dashboard"
-              className="bg-primary text-black px-5 py-2 rounded-full text-sm font-medium hover:bg-primary/90 transition-colors"
+              className="bg-primary text-black px-4 md:px-5 py-2 rounded-full text-sm font-medium hover:bg-primary/90 transition-colors"
             >
-              Go to Dashboard
+              <span className="hidden md:inline">Go to </span>Dashboard
             </Link>
           )}
           {!isSubscribed && (
-            <form action="/api/checkout" method="POST">
+            <form action="/api/checkout" method="POST" className="hidden md:block">
               <input type="hidden" name="authorId" value={author.id} />
               <button type="submit" className="bg-white/10 hover:bg-white/20 text-white px-4 py-1.5 rounded-full text-sm font-medium transition-colors backdrop-blur-md">
                 Subscribe ($5/mo)
@@ -97,6 +97,18 @@ export default async function PostPage({ params }: { params: Promise<{ handle: s
           )}
         </div>
       </nav>
+
+      {/* Mobile Sticky Subscribe Button */}
+      {!isSubscribed && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 md:hidden">
+          <form action="/api/checkout" method="POST">
+            <input type="hidden" name="authorId" value={author.id} />
+            <button type="submit" className="bg-white text-black px-6 py-3 rounded-full text-sm font-bold shadow-xl">
+              Subscribe ($5/mo)
+            </button>
+          </form>
+        </div>
+      )}
 
       <main className="max-w-3xl mx-auto px-6 py-20 relative z-10">
         <header className="mb-16 text-center">

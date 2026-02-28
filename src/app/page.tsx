@@ -31,7 +31,7 @@ export default async function Home() {
           {userId ? (
             <>
               <Link href={dashboardHref} className="bg-primary text-black px-5 py-2 rounded-full text-sm font-medium hover:bg-primary/90 transition-colors">
-                Dashboard
+                <span className="hidden md:inline">Go to </span>Dashboard
               </Link>
               <HomeSignOutButton />
             </>
@@ -45,7 +45,7 @@ export default async function Home() {
 
       <main>
         {/* HERO SECTION */}
-        <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20">
+        <section className="relative min-h-[90vh] md:min-h-screen flex flex-col items-center justify-center overflow-hidden pt-32 pb-20 md:pt-20 md:pb-0">
           {/* Horizon Stage Glow */}
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-[800px] h-[400px] bg-horizon/40 blur-[120px] rounded-full pointer-events-none" />
 
@@ -88,7 +88,7 @@ export default async function Home() {
           </div>
 
           {/* Tagline */}
-          <div className="absolute bottom-12 w-full flex justify-center opacity-50 pointer-events-none">
+          <div className="mt-16 md:absolute md:bottom-12 w-full flex justify-center opacity-50 pointer-events-none px-4 text-center">
             <div className="text-sm md:text-base font-mono tracking-[0.2em] uppercase text-gray-300">
               Write in 4D. Ship at the speed of Vibe.
             </div>
@@ -96,8 +96,8 @@ export default async function Home() {
         </section>
 
         {/* FEATURES SECTION */}
-        <section id="features" className="py-32 px-6 max-w-6xl mx-auto relative z-10">
-          <div className="text-center mb-16">
+        <section id="features" className="py-20 md:py-32 px-6 max-w-6xl mx-auto relative z-10">
+          <div className="text-center mb-12 md:mb-16">
             <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Everything you need to scale.</h2>
             <p className="text-gray-400 text-lg">Powerful features wrapped in a sleek, distraction-free interface.</p>
           </div>
@@ -132,8 +132,8 @@ export default async function Home() {
         </section>
 
         {/* PRICING SECTION */}
-        <section id="pricing" className="py-32 px-6 max-w-6xl mx-auto relative z-10 border-t border-border/50">
-          <div className="text-center mb-16">
+        <section id="pricing" className="py-20 md:py-32 px-6 max-w-6xl mx-auto relative z-10 border-t border-border/50">
+          <div className="text-center mb-12 md:mb-16">
             <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Simple, transparent pricing.</h2>
             <p className="text-gray-400 text-lg">Start for free, upgrade when you need more power.</p>
           </div>

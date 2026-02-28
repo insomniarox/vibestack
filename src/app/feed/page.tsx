@@ -47,7 +47,7 @@ export default async function FeedPage({ searchParams }: { searchParams: Promise
                 href="/dashboard"
                 className="bg-primary text-black px-5 py-2 rounded-full text-sm font-medium hover:bg-primary/90 transition-colors"
               >
-                Go to Dashboard
+                <span className="hidden md:inline">Go to </span>Dashboard
               </Link>
             )}
           </div>
