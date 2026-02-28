@@ -125,7 +125,17 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             {latestPost ? (
               <>
                 <h4 className="text-xl font-bold tracking-tight mb-1">{latestPost.title}</h4>
-                <p className="text-sm text-gray-400 truncate">Published {(latestPost.publishedAt ?? latestPost.createdAt)?.toLocaleDateString()} • Vibe: {latestPost.vibeTheme}</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-sm text-gray-400">{(latestPost.publishedAt ?? latestPost.createdAt)?.toLocaleDateString()}</span>
+                  <span className="px-2 py-0.5 rounded bg-white/5 font-mono text-xs capitalize border border-white/10 text-gray-300">
+                    {latestPost.vibeTheme}
+                  </span>
+                  {latestPost.isPaid && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-widest uppercase bg-primary/10 text-primary border border-primary/20">
+                      Premium
+                    </span>
+                  )}
+                </div>
               </>
             ) : (
               <>
@@ -148,7 +158,17 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                 <div key={post.id} className="p-6 hover:bg-white/[0.02] transition-colors flex justify-between items-center">
                   <div>
                     <h3 className="text-lg font-bold mb-1 text-gray-200">{post.title}</h3>
-                    <p className="text-sm text-gray-400">Vibe: {post.vibeTheme} • {post.createdAt?.toLocaleDateString()}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-sm text-gray-400">{post.createdAt?.toLocaleDateString()}</span>
+                      <span className="px-2 py-0.5 rounded bg-white/5 font-mono text-xs capitalize border border-white/10 text-gray-300">
+                        {post.vibeTheme}
+                      </span>
+                      {post.isPaid && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-widest uppercase bg-primary/10 text-primary border border-primary/20">
+                          Premium
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex gap-2 items-center">
                     {post.status === 'published' ? (

@@ -7,7 +7,6 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { currentUser } from "@clerk/nextjs/server";
 import { getMarkdownTeaser, renderMarkdownToHtml } from "@/lib/markdown";
-import ArticleVibeBackground from "@/components/ArticleVibeBackground";
 
 export default async function PostPage({ params }: { params: Promise<{ handle: string, slug: string }> }) {
   const { handle, slug } = await params;
@@ -59,7 +58,13 @@ export default async function PostPage({ params }: { params: Promise<{ handle: s
 
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
-      <ArticleVibeBackground vibeTheme={post.vibeTheme} isPaid={post.isPaid} />
+      {/* Vibe Background Effect based on theme */}
+      <div className={`absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] blur-[120px] rounded-full pointer-events-none opacity-30 ${
+        post.vibeTheme === 'luxury' ? 'bg-amber-500' :
+        post.vibeTheme === 'aggressive' ? 'bg-red-500' :
+        post.vibeTheme === 'melancholic' ? 'bg-blue-500' :
+        'bg-horizon'
+      }`} />
 
       <nav className="p-6 relative z-10 max-w-4xl mx-auto flex justify-between items-center">
         <div className="flex items-center gap-4">
