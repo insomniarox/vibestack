@@ -70,7 +70,7 @@ async function sendPublishEmails(
   const htmlContent = renderMarkdownToHtml(markdownContent);
 
   const emails = userSubs.map(sub => ({
-    from: 'VibeStack <onboarding@resend.dev>',
+    from: 'VibeStack <hello@mail.eoschaos.it>',
     to: sub.email,
     subject: `${title} - A new post from ${handle}`,
     html: `
