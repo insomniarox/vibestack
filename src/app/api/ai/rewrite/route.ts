@@ -37,7 +37,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const prompt = `You are an elite copywriter. Rewrite the following text to perfectly match a "${vibe || 'neutral'}" tone. 
+    const prompt = `You are an elite copywriter. Rewrite the following text to perfectly match a "${vibe || 'default'}" tone. 
     Keep the core message intact, but aggressively adapt the vocabulary, pacing, and aesthetic to fit the mood.
     Return ONLY the rewritten text, no conversational filler.
     

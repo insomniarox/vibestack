@@ -30,6 +30,9 @@ export default function ArticleVibeBackground({
   } else if (vibeTheme === "melancholic") {
     baseColorClass = "bg-blue-500";
     waveBorderClass = "border-blue-500";
+  } else if (vibeTheme === "neutral") {
+    baseColorClass = "bg-zinc-500";
+    waveBorderClass = "border-zinc-500";
   }
 
   // Base shapes mapped from vibe
@@ -45,6 +48,9 @@ export default function ArticleVibeBackground({
   } else if (vibeTheme === "luxury") {
     waveShapeClass = "rounded-[70%_30%_50%_50%_/_30%_30%_70%_70%]"; // elegant long asymmetrical
     waveRotate = [0, -90, -180, -360];
+  } else if (vibeTheme === "neutral") {
+    waveShapeClass = "rounded-[2rem]"; // smooth minimalist rounded rectangle
+    waveRotate = [0, 90, 180, 270]; // smooth constant rotation
   }
 
   if (!mounted) return null;

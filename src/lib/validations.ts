@@ -6,7 +6,7 @@ const MAX_CONTENT_LENGTH = 500_000;
 export const createPostSchema = z.object({
   title: z.string().min(1, "Title is required").max(500),
   content: z.string().min(1, "Content is required").max(MAX_CONTENT_LENGTH, "Content is too large"),
-  vibe: z.string().max(50).optional().default("neutral"),
+  vibe: z.string().max(50).optional().default("default"),
   status: z.enum(["draft", "published"]).optional().default("draft"),
   isPaid: z.boolean().optional().default(false),
   colorScheme: z.string().nullable().optional(),

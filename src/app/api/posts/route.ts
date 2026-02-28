@@ -121,7 +121,7 @@ export async function POST(req: Request) {
     });
 
     const plan = await getUserPlan(user.id);
-    const effectiveVibe = plan === 'pro' ? vibe : 'neutral';
+    const effectiveVibe = plan === 'pro' ? vibe : 'default';
     const effectiveColorScheme = plan === 'pro' ? (colorScheme || null) : null;
 
     if (status === 'published') {
@@ -218,7 +218,7 @@ export async function PUT(req: Request) {
       }
     }
 
-    const finalVibe = plan === 'pro' ? (vibe || existingPost[0].vibeTheme) : 'neutral';
+    const finalVibe = plan === 'pro' ? (vibe || existingPost[0].vibeTheme) : 'default';
     const finalColorScheme = plan === 'pro' ? (colorScheme !== undefined ? colorScheme : existingPost[0].colorScheme) : null;
 
     const updatePayload: Partial<typeof posts.$inferInsert> = {

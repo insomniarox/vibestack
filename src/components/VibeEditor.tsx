@@ -24,7 +24,7 @@ function VibeEditorInner({ initialPost, plan }: { initialPost?: VibeEditorPost |
   const isPro = plan === "pro";
   const [title, setTitle] = useState(initialPost?.title || "");
   const [content, setContent] = useState(initialPost?.content || "");
-  const [vibe, setVibe] = useState(isPro ? initialPost?.vibeTheme || "neutral" : "neutral");
+  const [vibe, setVibe] = useState(isPro ? initialPost?.vibeTheme || "neutral" : "default");
   const [toneIndex, setToneIndex] = useState(1);
   const [contrastIndex, setContrastIndex] = useState(1);
   const [saturationIndex, setSaturationIndex] = useState(1);
@@ -175,7 +175,7 @@ function VibeEditorInner({ initialPost, plan }: { initialPost?: VibeEditorPost |
 
     try {
       const method = initialPost ? 'PUT' : 'POST';
-      const payloadVibe = isPro ? vibe : "neutral";
+      const payloadVibe = isPro ? vibe : "default";
       const payloadColorScheme = isPro && colorScheme ? JSON.stringify(colorScheme) : null;
       const body = {
         ...(initialPost && { id: initialPost.id }),
@@ -222,7 +222,7 @@ function VibeEditorInner({ initialPost, plan }: { initialPost?: VibeEditorPost |
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: content, vibe: isPro ? vibe : "neutral" })
+        body: JSON.stringify({ text: content, vibe: isPro ? vibe : "default" })
       });
 
       if (!res.ok) {
