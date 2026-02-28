@@ -17,4 +17,18 @@ describe("markdown utilities", () => {
     const text = markdownToPlainText("**Hi** ![alt](https://example.com/x.png)");
     expect(text).toBe("Hi");
   });
+
+  it("strips markdown syntax and long urls from plain text", () => {
+    const longUrl = "https://cdn.example.com/" + "x".repeat(500);
+    const markdown = `# Heading\n\n![img](${longUrl})\n\n[Read more](${longUrl})`;
+    const text = markdownToPlainText(markdown);
+    expect(text).toBe("Heading Read more");
+    expect(text.length).toBeLessThan(40);
+  });
+
+  it("converts code fences into readable plain text", () => {
+    const text = markdownToPlainText("```ts\nconst x = 1\n```\n\nFinal line");
+    expect(text).toContain("const x = 1");
+    expect(text).toContain("Final line");
+  });
 });

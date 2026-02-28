@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { getUserPlan } from '@/lib/user-plans';
 import { getAiTextLimit } from '@/lib/plan-limits';
 import { consumeAiCall } from '@/lib/ai-usage';
+import { markdownToPlainText } from '@/lib/markdown';
 
 export async function POST(req: Request) {
   try {
@@ -24,9 +25,28 @@ export async function POST(req: Request) {
     }
 
     const { text } = parsed.data;
+    const normalizedText = markdownToPlainText(text);
 
-    if (text.length > textLimit) {
-      return NextResponse.json({ error: { text: [`Text must be ${textLimit} characters or less.`] } }, { status: 400 });
+    if (!normalizedText) {
+      return NextResponse.json(
+        {
+          code: 'EMPTY_TEXT',
+          message: 'Text must include readable content after removing markdown syntax.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (normalizedText.length > textLimit) {
+      return NextResponse.json(
+        {
+          code: 'TEXT_LIMIT_EXCEEDED',
+          message: `Text must be ${textLimit} characters or less.`,
+          limit: textLimit,
+          actualLength: normalizedText.length,
+        },
+        { status: 400 }
+      );
     }
 
     const usage = await consumeAiCall(user.id, plan);
@@ -41,7 +61,7 @@ export async function POST(req: Request) {
     Keep it concise (1-2 sentences maximum). Return ONLY the summary.
     
     Text to summarize:
-    ${text}`;
+    ${normalizedText}`;
 
     const result = streamText({
       model: google(process.env.GOOGLE_AI_MODEL || 'gemini-2.5-flash'),

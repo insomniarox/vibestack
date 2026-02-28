@@ -234,8 +234,15 @@ function VibeEditorInner({ initialPost, plan }: { initialPost?: VibeEditorPost |
           toast(`Daily AI limit reached. Resets at ${resetAt}.`, "warning");
           return;
         }
-        const errText = await res.text();
-        throw new Error(`API Error: ${res.status} - ${errText}`);
+
+        const payload = await res.json().catch(() => null);
+        const fieldError = payload?.error?.text?.[0];
+        const message = fieldError || payload?.message || payload?.error || `Request failed with status ${res.status}`;
+        const details =
+          payload?.code === 'TEXT_LIMIT_EXCEEDED' && Number.isFinite(payload?.limit)
+            ? ` Limit: ${payload.limit} chars.`
+            : '';
+        throw new Error(`${message}${details}`);
       }
       if (!res.body) throw new Error('No response body');
 
@@ -256,6 +263,8 @@ function VibeEditorInner({ initialPost, plan }: { initialPost?: VibeEditorPost |
       }
     } catch (error) {
       console.error("AI Action failed:", error);
+      const message = error instanceof Error ? error.message : 'AI request failed.';
+      toast(message, "error");
       // Restore original content if the stream failed before completing
       setContent((current) => current.length === 0 ? originalContent : current);
     } finally {

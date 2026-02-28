@@ -26,7 +26,15 @@ export async function POST(req: Request) {
     const { text, vibe } = parsed.data;
 
     if (text.length > textLimit) {
-      return NextResponse.json({ error: { text: [`Text must be ${textLimit} characters or less.`] } }, { status: 400 });
+      return NextResponse.json(
+        {
+          code: 'TEXT_LIMIT_EXCEEDED',
+          message: `Text must be ${textLimit} characters or less.`,
+          limit: textLimit,
+          actualLength: text.length,
+        },
+        { status: 400 }
+      );
     }
 
     const usage = await consumeAiCall(user.id, plan);
@@ -37,12 +45,14 @@ export async function POST(req: Request) {
       );
     }
 
-    const prompt = `You are an elite copywriter. Rewrite the following text to perfectly match a "${vibe || 'default'}" tone. 
-    Keep the core message intact, but aggressively adapt the vocabulary, pacing, and aesthetic to fit the mood.
-    Return ONLY the rewritten text, no conversational filler.
-    
-    Original Text:
-    ${text}`;
+    const prompt = `You are an elite copywriter.
+Rewrite the markdown content below to match a "${vibe || 'default'}" tone.
+Keep the core message intact, preserve markdown structure (headings, lists, links, images, code fences), and return only the rewritten markdown.
+No commentary, no fences around your answer.
+
+<markdown_input>
+${text}
+</markdown_input>`;
 
     const result = streamText({
       model: google(process.env.GOOGLE_AI_MODEL || 'gemini-2.5-flash'),
