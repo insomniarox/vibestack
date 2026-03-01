@@ -59,7 +59,7 @@ export default async function Home() {
           </div>
 
           {/* H1 Headline */}
-          <h1 className="text-6xl md:text-8xl font-bold tracking-tighter leading-tight mb-6 text-transparent bg-clip-text bg-gradient-to-b from-white to-white/60 text-center">
+          <h1 className="text-6xl md:text-8xl font-bold tracking-tighter leading-tight mb-6 text-white sm:text-transparent sm:bg-clip-text sm:bg-gradient-to-b sm:from-white sm:to-white/60 text-center relative z-10">
             Stop Writing.<br />Start Vibing.
           </h1>
 
