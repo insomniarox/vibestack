@@ -45,7 +45,7 @@ export default async function Home() {
 
       <main>
         {/* HERO SECTION */}
-        <section className="relative flex flex-col items-center justify-center overflow-hidden min-h-[100dvh] pt-32 pb-16 md:pt-40 md:pb-20">
+        <section className="relative flex flex-col items-center justify-center overflow-hidden min-h-[100svh] md:min-h-screen pt-32 pb-16 md:pt-40 md:pb-20">
           {/* Horizon Stage Glow */}
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-[800px] h-[400px] bg-horizon/40 blur-[120px] rounded-full pointer-events-none" />
 
