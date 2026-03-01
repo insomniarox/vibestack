@@ -96,7 +96,11 @@ export default async function Home() {
         </section>
 
         {/* FEATURES SECTION */}
-        <section id="features" className="py-16 md:py-20 px-6 max-w-6xl mx-auto relative z-10">
+        <section
+          id="features"
+          className="py-16 md:py-20 px-6 max-w-6xl mx-auto relative z-10"
+          style={{ contentVisibility: "auto", containIntrinsicSize: "1200px" }}
+        >
           <div className="text-center mb-12 md:mb-16">
             <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Everything you need to scale.</h2>
             <p className="text-gray-400 text-lg">Powerful features wrapped in a sleek, distraction-free interface.</p>
@@ -132,7 +136,11 @@ export default async function Home() {
         </section>
 
         {/* PRICING SECTION */}
-        <section id="pricing" className="py-16 md:py-20 px-6 max-w-6xl mx-auto relative z-10 border-t border-border/50">
+        <section
+          id="pricing"
+          className="py-16 md:py-20 px-6 max-w-6xl mx-auto relative z-10 border-t border-border/50"
+          style={{ contentVisibility: "auto", containIntrinsicSize: "1200px" }}
+        >
           <div className="text-center mb-12 md:mb-16">
             <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Simple, transparent pricing.</h2>
             <p className="text-gray-400 text-lg">Start for free, upgrade when you need more power.</p>
