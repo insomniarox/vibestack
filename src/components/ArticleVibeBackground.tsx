@@ -1,7 +1,6 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { useEffect, useState } from "react";
 
 export default function ArticleVibeBackground({ 
   vibeTheme, 
@@ -11,11 +10,6 @@ export default function ArticleVibeBackground({
   isPaid: boolean | null;
 }) {
   const prefersReducedMotion = useReducedMotion();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Base blob colors mapped from page.tsx logic
   let baseColorClass = "bg-horizon";
@@ -52,8 +46,6 @@ export default function ArticleVibeBackground({
     waveShapeClass = "rounded-[2rem]"; // smooth minimalist rounded rectangle
     waveRotate = [0, 90, 180, 270]; // smooth constant rotation
   }
-
-  if (!mounted) return null;
 
   if (prefersReducedMotion) {
     return (
